@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>docs/hardware/README.md — Driver de Potencia 4 Canales DC (Dual L293D)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', ' system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        anahuac: {
+                            DEFAULT: '#ff5900',
+                            dark: '#cc4700',
+                            light: '#ff7a33'
+                        },
+                        pcb: {
+                            green: '#15803d',
+                            trace: '#22c55e',
+                            pad: '#eab308'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar styled after Docsify / GitBook */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 89, 0, 0.8);
+        }
+
+        /* Presentation Mode Scaling */
+        body.presentation-mode main {
+            font-size: 1.15rem;
+            line-height: 1.75;
+        }
+        body.presentation-mode h1 {
+            font-size: 2.5rem !important;
+        }
+        body.presentation-mode h2 {
+            font-size: 1.85rem !important;
+        }
+        body.presentation-mode .code-pill {
+            font-size: 0.95rem !important;
+        }
+
+        /* Motor Spin Animations */
+        @keyframes spinCW {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes spinCCW {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+        .spin-cw {
+            animation: spinCW 1.1s linear infinite;
+        }
+        .spin-ccw {
+            animation: spinCCW 1.1s linear infinite;
+        }
+
+        /* LED Glow Effect */
+        .led-on-green {
+            background: radial-gradient(circle at 35% 35%, #bbf7d0, #22c55e 55%, #15803d 100%);
+            box-shadow: 0 0 12px #22c55e, 0 0 24px rgba(34, 197, 94, 0.6);
+            border-color: #86efac;
+        }
+        .led-off {
+            background: radial-gradient(circle at 35% 35%, #334155, #1e293b 70%, #0f172a 100%);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+            border-color: #475569;
+        }
+
+        /* Smooth Anchor Offset */
+        section[id] {
+            scroll-margin-top: 5rem;
+        }
+
+        /* Docsify-style Anchor Link on Hover */
+        .docs-heading:hover .anchor-hash {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-anahuac selection:text-white transition-colors duration-200">
+
+    <!-- TOP NAVIGATION / BITBUCKET-DOCSIFY BAR -->
+    <header class="fixed top-0 left-0 right-0 h-14 bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-800 z-40 flex items-center justify-between px-4 lg:px-6">
+        <!-- Left: Sidebar Toggle & Breadcrumb -->
+        <div class="flex items-center gap-3 min-w-0">
+            <button id="sidebarToggleBtn" onclick="toggleSidebar()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Mostrar/Ocultar Menú Lateral">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+
+            <!-- Docsify / Bitbucket style path -->
+            <div class="flex items-center gap-1.5 font-mono text-xs sm:text-sm truncate">
+                <span class="px-2 py-0.5 rounded bg-anahuac/20 text-anahuac font-semibold border border-anahuac/30 flex items-center gap-1.5">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span class="hidden sm:inline">anahuac-mecatronica</span>
+                </span>
+                <span class="text-slate-600">/</span>
+                <span class="text-slate-400 hidden md:inline">docs</span>
+                <span class="text-slate-600 hidden md:inline">/</span>
+                <span class="text-slate-400 hidden sm:inline">hardware</span>
+                <span class="text-slate-600 hidden sm:inline">/</span>
+                <span class="text-emerald-400 font-semibold">README.md</span>
+            </div>
+        </div>
+
+        <!-- Center/Right: Status Pills & Actions -->
+        <div class="flex items-center gap-2 sm:gap-3">
+            <!-- Quick Hardware Revision Pill -->
+            <div class="hidden xl:flex items-center gap-2 bg-slate-800/90 border border-slate-700/80 px-3 py-1 rounded-full text-xs font-mono">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-slate-300">1ª Revisión: <strong class="text-white">18/11/2026</strong></span>
+                <span class="text-slate-600">|</span>
+                <span class="text-amber-400 font-semibold">~$200 MXN</span>
+            </div>
+
+            <!-- Presentation Mode Toggle -->
+            <button id="presModeBtn" onclick="togglePresentationMode()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition" title="Optimizar tamaño de letra y controles para proyectar en clase">
+                <i class="fa-solid fa-tv text-anahuac"></i>
+                <span class="hidden sm:inline">Modo Presentación</span>
+            </button>
+
+            <!-- Export Docsify / GitHub Pages Modal Button -->
+            <button onclick="openExportModal()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 transition" title="Obtener código README.md + Docsify para GitHub Pages">
+                <i class="fa-brands fa-github"></i>
+                <span class="hidden md:inline">Exportar Docsify</span>
+            </button>
+
+            <!-- Theme Toggle -->
+            <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 transition" title="Cambiar Tema Claro / Oscuro">
+                <i id="themeIcon" class="fa-solid fa-sun"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE WRAPPER -->
+    <div class="pt-14 flex min-h-screen">
+
+        <!-- LEFT SIDEBAR (DOCSIFY NAVIGATION TREE) -->
+        <aside id="sidebar" class="fixed lg:sticky top-14 left-0 z-30 w-72 h-[calc(100vh-3.5rem)] bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0">
+            <!-- Project Branding Header -->
+            <div class="p-4 border-b border-slate-800 bg-slate-900/50">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-anahuac font-bold">Universidad Anáhuac</span>
+                    <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">v1.0 REV1</span>
+                </div>
+                <h2 class="font-bold text-sm text-white leading-snug">Driver de Potencia 4 Canales DC (Dual L293D)</h2>
+                <p class="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-gear text-slate-500"></i>
+                    <span>José Daniel Bobadilla Vega</span>
+                </p>
+
+                <!-- Docsify Search Input -->
+                <div class="mt-3 relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                    <input id="sidebarSearch" type="text" oninput="filterDocumentation(this.value)" placeholder="Buscar pin, etapa, U2, J4..." class="w-full bg-slate-950 border border-slate-800 focus:border-anahuac rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none font-mono">
+                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-2 top-2 text-slate-500 hover:text-slate-300 text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-xs" id="sidebarNav">
+                <div class="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">Documentación Técnica</div>
+                
+                <a href="#resumen" onclick="setActiveNav(this)" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-200 bg-anahuac/15 border-l-2 border-anahuac font-medium transition">
+                    <i class="fa-solid fa-book-open text-anahuac w-4 text-center"></i>
+                    <span>1. Resumen General</span>
+                </a>
+
+                <a href="#arquitectura" onclick="setActiveNav(this)" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-sitemap text-emerald-400 w-4 text-center"></i>
+                    <span>2. Arquitectura del Circuito</span>
+                </a>
+                <!-- Sub-links for Architecture -->
+                <div class="pl-6 space-y-1 border-l border-slate-800 ml-4 my-1">
+                    <a href="#etapa-alimentacion" class="block px-2 py-1 rounded text-slate-400 hover:text-white hover:bg-slate-800/40 font-mono text-[11px]">2.1 Alimentación y Fusible (XF1)</a>
+                    <a href="#etapa-regulacion" class="block px-2 py-1 rounded text-slate-400 hover:text-white hover:bg-slate-800/40 font-mono text-[11px]">2.2 Regulación +5V (U1, C1-C2)</a>
+                    <a href="#etapa-control" class="block px-2 py-1 rounded text-slate-400 hover:text-white hover:bg-slate-800/40 font-mono text-[11px]">2.3 Control y Pull-Down (J1, R1..)</a>
+                    <a href="#etapa-potencia" class="block px-2 py-1 rounded text-slate-400 hover:text-white hover:bg-slate-800/40 font-mono text-[11px]">2.4 Etapa Potencia (U2, U3, LEDs)</a>
+                </div>
+
+                <a href="#simulador" onclick="setActiveNav(this)" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-sliders text-amber-400 w-4 text-center"></i>
+                    <span>3. Simulador y Tabla de Verdad</span>
+                </a>
+
+                <a href="#esquematico-pcb" onclick="setActiveNav(this)" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-layer-group text-cyan-400 w-4 text-center"></i>
+                    <span>4. Esquemático, PCB 3D y DFM</span>
+                </a>
+
+                <a href="#carcasa" onclick="setActiveNav(this)" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-cube text-purple-400 w-4 text-center"></i>
+                    <span>5. Carcasa y Diseño Mecánico</span>
+                </a>
+
+                <a href="#bom" onclick="setActiveNav(this)" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-table-list text-pink-400 w-4 text-center"></i>
+                    <span>6. Lista de Materiales (BOM)</span>
+                </a>
+
+                <a href="#pinout" onclick="setActiveNav(this)" class="nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-plug text-blue-400 w-4 text-center"></i>
+                    <span>7. Mapeo de Borneras (Pinout)</span>
+                </a>
+
+                <!-- Quick Inspector Box inside Sidebar -->
+                <div class="mt-4 pt-3 border-t border-slate-800 px-2">
+                    <div class="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold mb-2">Resumen Rápido de Placa</div>
+                    <div class="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                            <div class="text-slate-500">Motores DC</div>
+                            <div class="text-white font-bold">4 Canales</div>
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                            <div class="text-slate-500">Drivers IC</div>
+                            <div class="text-emerald-400 font-bold">2× L293DNE</div>
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                            <div class="text-slate-500"> Alimentación</div>
+                            <div class="text-amber-400 font-bold">+12V / +5V</div>
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                            <div class="text-slate-500">Costo Total</div>
+                            <div class="text-anahuac font-bold">~$200 MXN</div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="p-3 border-t border-slate-800 bg-slate-950/60 text-[11px] text-slate-500 font-mono flex items-center justify-between">
+                <span>Docsify Hardware Spec</span>
+                <span class="text-slate-400">18/11/2026</span>
+            </div>
+        </aside>
+
+        <!-- MAIN DOCUMENTATION CONTENT -->
+        <main class="flex-1 min-w-0 px-4 sm:px-8 lg:px-12 py-8 max-w-6xl mx-auto space-y-12">
+
+            <!-- DOCUMENT HEADER / METADATA CARD -->
+            <div class="relative rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 p-6 sm:p-8 shadow-2xl overflow-hidden">
+                <div class="absolute -right-12 -top-12 w-56 h-56 bg-anahuac/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute right-8 bottom-4 opacity-10 pointer-events-none hidden md:block">
+                    <i class="fa-solid fa-microchip text-8xl text-emerald-400"></i>
+                </div>
+
+                <!-- Top University & Course Badges -->
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-anahuac text-white shadow-sm">
+                        <i class="fa-solid fa-graduation-cap mr-1"></i> Universidad Anáhuac
+                    </span>
+                    <span class="px-3 py-1 rounded-full text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                        Ingeniería Mecatrónica
+                    </span>
+                    <span class="px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        <i class="fa-solid fa-calendar-check mr-1"></i> Primera Revisión: 18/11/2026
+                    </span>
+                    <span class="px-3 py-1 rounded-full text-xs font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                        <i class="fa-solid fa-coins mr-1"></i> Costo Total: ~$200.00 MXN
+                    </span>
+                </div>
+
+                <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                    Driver de Potencia de 4 Canales DC <span class="text-emerald-400 font-mono">(Dual L293DNE)</span>
+                </h1>
+                <p class="mt-3 text-slate-300 text-sm sm:text-base max-w-3xl leading-relaxed">
+                    Documentación técnica de hardware, análisis esquemático, diseño de PCB con adaptaciones de manufactura (DFM) y validación funcional del módulo controlador bidireccional para 4 motores de corriente continua con regulación lógica integrada y diagnóstico luminoso en tiempo real.
+                </p>
+
+                <!-- Metadata Grid -->
+                <div class="mt-6 pt-5 border-t border-slate-800/90 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="text-slate-500 uppercase text-[10px]">Autor del Proyecto</div>
+                        <div class="text-white font-semibold mt-0.5 text-sm">José Daniel Bobadilla Vega</div>
+                    </div>
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="text-slate-500 uppercase text-[10px]">Topología de Potencia</div>
+                        <div class="text-emerald-400 font-semibold mt-0.5 text-sm">4× Puentes H (2× L293DNE)</div>
+                    </div>
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="text-slate-500 uppercase text-[10px]">Dominios de Voltaje</div>
+                        <div class="text-amber-400 font-semibold mt-0.5 text-sm">+12V (Motores) / +5V (Lógica)</div>
+                    </div>
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="text-slate-500 uppercase text-[10px]">Estado de Revisión</div>
+                        <div class="text-cyan-400 font-semibold mt-0.5 text-sm">Hardware Ensamblado + Carcasa</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SECTION 1: RESUMEN GENERAL (OVERVIEW)
+                 ========================================== -->
+            <section id="resumen" class="doc-section space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="docs-heading text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-lg bg-anahuac/20 border border-anahuac/40 text-anahuac flex items-center justify-center font-mono text-sm">01</span>
+                        <span>Resumen General del Sistema (<code class="text-emerald-400 font-mono text-base">Overview</code>)</span>
+                        <a href="#resumen" class="anchor-hash opacity-0 text-slate-500 hover:text-anahuac transition text-base">#</a>
+                    </h2>
+                    <span class="text-xs font-mono text-slate-500 hidden sm:inline">docs/hardware/overview</span>
+                </div>
+
+                <p class="text-slate-300 leading-relaxed">
+                    El presente proyecto consiste en una <strong>tarjeta de potencia autónoma de estado sólido</strong> capaz de gobernar simultáneamente hasta <strong>4 motores de corriente directa (DC)</strong> en ambos sentidos de giro (Horario <code class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-300 font-mono text-xs">CW</code> y Antihorario <code class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 font-mono text-xs">CCW</code>), sin depender de un microcontrolador ni programación por software. El control se ejecuta directamente mediante lógica cableada a través de interruptores externos alimentados desde la propia placa.
+                </p>
+
+                <!-- Key Specs Table + Highlights -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <!-- Left: Technical Specs Table -->
+                    <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+                        <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                            <span class="font-mono text-xs font-semibold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-amber-400"></i> Especificaciones Eléctricas y Operativas
+                            </span>
+                            <span class="text-[11px] font-mono text-slate-500">REV 1.0</span>
+                        </div>
+                        <div class="divide-y divide-slate-800/70 text-xs sm:text-sm">
+                            <div class="grid grid-cols-12 px-4 py-2.5">
+                                <div class="col-span-5 text-slate-400 font-medium">Tensión Principal de Entrada</div>
+                                <div class="col-span-7 font-mono text-white"><span class="text-amber-400 font-semibold">+12V DC</span> nominales en bornera <code class="text-emerald-400">J4</code> (<code class="text-slate-300">+12V_IN</code>)</div>
+                            </div>
+                            <div class="grid grid-cols-12 px-4 py-2.5 bg-slate-950/30">
+                                <div class="col-span-5 text-slate-400 font-medium">Tensión Lógica en Placa</div>
+                                <div class="col-span-7 font-mono text-white"><span class="text-emerald-400 font-semibold">+5V DC</span> regulados por <code class="text-cyan-400">U1</code> (TO-220) distribuidos en <code class="text-emerald-400">J3</code></div>
+                            </div>
+                            <div class="grid grid-cols-12 px-4 py-2.5">
+                                <div class="col-span-5 text-slate-400 font-medium">Etapa de Potencia</div>
+                                <div class="col-span-7 font-mono text-white">2× <code class="text-emerald-400">L293DNE</code> (<code class="text-cyan-400">U2</code>, <code class="text-cyan-400">U3</code>) en zócalos DIP-16</div>
+                            </div>
+                            <div class="grid grid-cols-12 px-4 py-2.5 bg-slate-950/30">
+                                <div class="col-span-5 text-slate-400 font-medium">Capacidad de Corriente</div>
+                                <div class="col-span-7 font-mono text-white">600 mA continuos / canal (1.2 A pico no repetitivo)</div>
+                            </div>
+                            <div class="grid grid-cols-12 px-4 py-2.5">
+                                <div class="col-span-5 text-slate-400 font-medium">Protección Back-EMF</div>
+                                <div class="col-span-7 font-mono text-white">Diodos de conmutación internos ( sufijo <code class="text-amber-300">D</code> en L293DNE)</div>
+                            </div>
+                            <div class="grid grid-cols-12 px-4 py-2.5 bg-slate-950/30">
+                                <div class="col-span-5 text-slate-400 font-medium">Protección de Entrada</div>
+                                <div class="col-span-7 font-mono text-white">Portafusibles en serie <code class="text-rose-400">XF1</code> + puente de corte <code class="text-emerald-400">J6</code></div>
+                            </div>
+                            <div class="grid grid-cols-12 px-4 py-2.5">
+                                <div class="col-span-5 text-slate-400 font-medium">Inmunidad a Ruido Lógico</div>
+                                <div class="col-span-7 font-mono text-white">8× Resistencias Pull-Down (<code class="text-cyan-400">R1, R3–R9</code>) en entradas <code class="text-emerald-400">J1</code></div>
+                            </div>
+                            <div class="grid grid-cols-12 px-4 py-2.5 bg-slate-950/30">
+                                <div class="col-span-5 text-slate-400 font-medium">Diagnóstico Visual</div>
+                                <div class="col-span-7 font-mono text-white">9× LEDs verdes 3mm (<code class="text-emerald-400">DS5</code> Power + 8× Salidas de Motor)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Engineering Value Cards -->
+                    <div class="lg:col-span-5 space-y-3">
+                        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex gap-3.5">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-shield-halved text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">Operación Segura con Pull-Down</h3>
+                                <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                    Las 8 líneas de control en <code class="text-emerald-300 font-mono">J1</code> están referenciadas a <code class="font-mono text-slate-300">GND</code> mediante resistencias Pull-Down, garantizando que ningún motor se active accidentalmente cuando los interruptores están abiertos.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex gap-3.5">
+                            <div class="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-lightbulb text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">Diagnóstico Instantáneo por Canal</h3>
+                                <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                    Cada terminal de motor cuenta con su propio LED testigo en paralelo a tierra (<code class="text-emerald-300 font-mono">DS1–DS4</code> y <code class="text-emerald-300 font-mono">DS6–DS9</code>), permitiendo verificar el estado de los puentes H incluso sin conectar los motores.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex gap-3.5">
+                            <div class="w-10 h-10 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-screwdriver-wrench text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">Diseño Mantenible (Bases DIP-16)</h3>
+                                <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                    Se implementaron bases portapines de 16 terminales para <code class="text-cyan-300 font-mono">U2</code> y <code class="text-cyan-300 font-mono">U3</code>, protegiendo los integrados del calor de soldadura y permitiendo su reemplazo en segundos.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 2: ARQUITECTURA DEL HARDWARE Y ETAPAS
+                 ========================================== -->
+            <section id="arquitectura" class="doc-section space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="docs-heading text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-mono text-sm">02</span>
+                        <span>Arquitectura del Hardware y Análisis por Etapas</span>
+                        <a href="#arquitectura" class="anchor-hash opacity-0 text-slate-500 hover:text-anahuac transition text-base">#</a>
+                    </h2>
+                    <span class="text-xs font-mono text-slate-500 hidden sm:inline">docs/hardware/architecture</span>
+                </div>
+
+                <!-- Interactive Block Diagram Flow (SVG) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-lg">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                        <span class="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
+                            <i class="fa-solid fa-diagram-project text-anahuac mr-1.5"></i> Diagrama de Bloques de Flujo de Potencia y Señal
+                        </span>
+                        <span class="text-[11px] font-mono text-slate-400">Haz clic en cualquier bloque para ir a su análisis detallado</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 relative">
+                        <!-- Stage 1 Block -->
+                        <a href="#etapa-alimentacion" class="group p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-amber-500/60 transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between text-xs font-mono text-amber-400 mb-1">
+                                    <span>ETAPA 1</span>
+                                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                                </div>
+                                <h4 class="font-bold text-white text-sm">Entrada y Protección</h4>
+                                <p class="text-xs text-slate-400 mt-1">Fuente DC externa 12V, fusible en serie y corte general.</p>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1 font-mono text-[11px]">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-amber-300">J4</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-rose-300">XF1</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-amber-300">J6</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-emerald-300">DS5</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300">R13</span>
+                            </div>
+                        </a>
+
+                        <!-- Stage 2 Block -->
+                        <a href="#etapa-regulacion" class="group p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/60 transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between text-xs font-mono text-cyan-400 mb-1">
+                                    <span>ETAPA 2</span>
+                                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                                </div>
+                                <h4 class="font-bold text-white text-sm">Regulación Lógica +5V</h4>
+                                <p class="text-xs text-slate-400 mt-1">Conversión lineal 12V→5V, filtrado MLCC y bus de switches.</p>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1 font-mono text-[11px]">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-cyan-300">U1 (7805)</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-amber-300">C1</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-amber-300">C2</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-emerald-300">J3 (+5V)</span>
+                            </div>
+                        </a>
+
+                        <!-- Stage 3 Block -->
+                        <a href="#etapa-control" class="group p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-500/60 transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between text-xs font-mono text-purple-400 mb-1">
+                                    <span>ETAPA 3</span>
+                                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                                </div>
+                                <h4 class="font-bold text-white text-sm">Control y Red Pull-Down</h4>
+                                <p class="text-xs text-slate-400 mt-1">8 entradas digitales con referencia a GND anti-ruido.</p>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1 font-mono text-[11px]">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-purple-300">J1 (IN1–IN8)</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300">R1</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300">R3–R9</span>
+                            </div>
+                        </a>
+
+                        <!-- Stage 4 Block -->
+                        <a href="#etapa-potencia" class="group p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/60 transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between text-xs font-mono text-emerald-400 mb-1">
+                                    <span>ETAPA 4</span>
+                                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+                                </div>
+                                <h4 class="font-bold text-white text-sm">Drivers H-Bridge y Salidas</h4>
+                                <p class="text-xs text-slate-400 mt-1">Conmutación de potencia a 12V y diagnóstico con 8 LEDs.</p>
+                            </div>
+                            <div class="mt-3 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1 font-mono text-[11px]">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-emerald-300">U2, U3</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-amber-300">J2, J5, J7, J8</span>
+                                <span class="px-1.5 py-0.5 rounded bg-slate-900 text-emerald-300">DS1–4, 6–9</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Detailed 4 Sub-Stages -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Sub-stage 2.1 -->
+                    <div id="etapa-alimentacion" class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold">2.1 Etapa de Alimentación y Protección</span>
+                            <span class="font-mono text-xs text-slate-400">J4 • XF1 • J6 • DS5</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            La energía proveniente de la fuente de alimentación externa ingresa por la bornera de 2 pines <code class="text-amber-300 font-mono">J4</code> (<code class="font-mono">Pin 1: +12V_IN</code>, <code class="font-mono">Pin 2: GND</code>). Inmediatamente en serie con el nodo <code class="font-mono">+12V_IN</code> se ubica el portafusibles <code class="text-rose-400 font-mono">XF1</code>, encargado de abrir el circuito ante cualquier sobrecorriente o cortocircuito accidental en las cargas.
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-slate-300 font-mono bg-slate-950 p-3 rounded-lg border border-slate-800">
+                            <li><span class="text-amber-400">• Bornera J6 (2 Pines):</span> Actúa como puente de habilitación general conectando la salida protegida del fusible hacia el bus principal <code class="text-white">+12V</code>.</li>
+                            <li><span class="text-emerald-400">• Testigo DS5 + R13 (1 kΩ):</span> LED verde (<code class="text-slate-400">LTL-1CHG</code>) polarizado desde <code class="text-white">+12V</code> a <code class="text-white">GND</code> que confirma visualmente que el fusible <code class="text-rose-300">XF1</code> está íntegro y el puente <code class="text-amber-300">J6</code> cerrado.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Sub-stage 2.2 -->
+                    <div id="etapa-regulacion" class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono text-xs font-bold">2.2 Regulación Lógica (+5V) y Filtrado</span>
+                            <span class="font-mono text-xs text-slate-400">U1 • C1 • C2 • J3</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            Para evitar requerir una segunda fuente externa de 5V, el circuito incorpora el regulador lineal positivo <code class="text-cyan-300 font-mono">U1</code> (encapsulado TO-220, familia LM7805) alimentado desde el bus de <code class="font-mono">+12V</code>.
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-slate-300 font-mono bg-slate-950 p-3 rounded-lg border border-slate-800">
+                            <li><span class="text-cyan-400">• Capacitores C1 y C2 (0.1 µF, 50V, X7R):</span> Ubicados en la entrada (<code class="text-white">+12V</code>) y salida (<code class="text-white">+5V</code>) de <code class="text-cyan-300">U1</code> para desacoplar ruido de alta frecuencia inducido por la conmutación de los motores y estabilizar el lazo de regulación.</li>
+                            <li><span class="text-emerald-400">• Bornera J3 (8 Pines):</span> Todos sus 8 terminales están unidos internamente al riel de <code class="text-white">+5V</code>, proporcionando alimentación común para los 8 interruptores de mando externos.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Sub-stage 2.3 -->
+                    <div id="etapa-control" class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 font-mono text-xs font-bold">2.3 Etapa de Control y Red Pull-Down</span>
+                            <span class="font-mono text-xs text-slate-400">J1 • R1 • R3–R9</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            Las 8 señales de control ingresan por la bornera de 8 pines <code class="text-purple-300 font-mono">J1</code>: los pines 1 al 4 gobiernan el primer driver (<code class="font-mono">U1_IN1..U1_IN4</code> → <code class="text-emerald-300 font-mono">U2</code>) y los pines 5 al 8 gobiernan el segundo driver (<code class="font-mono">U2_IN1..U2_IN4</code> → <code class="text-emerald-300 font-mono">U3</code>).
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-slate-300 font-mono bg-slate-950 p-3 rounded-lg border border-slate-800">
+                            <li><span class="text-purple-400">• Red Pull-Down (R1, R3, R4, R5, R6, R7, R8, R9):</span> Cada pin de <code class="text-purple-300">J1</code> cuenta con una resistencia conectada a <code class="text-white">GND</code> (10 kΩ en esquemático / 100 kΩ axial en BOM).</li>
+                            <li><span class="text-amber-400">• Justificación de Ingeniería:</span> Sin estas resistencias, al abrir un interruptor el pin del L293D quedaría en alta impedancia (flotante), pudiendo interpretar ruido electromagnético como un <code class="text-white">1</code> lógico y accionar los motores sin control.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Sub-stage 2.4 -->
+                    <div id="etapa-potencia" class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono text-xs font-bold">2.4 Etapa de Potencia y Diagnóstico LED</span>
+                            <span class="font-mono text-xs text-slate-400">U2 • U3 • J2,J5,J7,J8</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            Conformada por dos circuitos integrados <code class="text-emerald-300 font-mono">L293DNE</code> (<code class="font-mono">U2</code> y <code class="font-mono">U3</code>). En ambos integrados, el pin 16 (<code class="font-mono">VCC1</code>) y los pines de habilitación <code class="font-mono">1/2EN</code> (pin 1) y <code class="font-mono">3/4EN</code> (pin 9) están conectados permanentemente a <code class="font-mono">+5V</code>, mientras que el pin 8 (<code class="font-mono">VCC2</code>) recibe los <code class="font-mono">+12V</code> de potencia para los motores.
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-slate-300 font-mono bg-slate-950 p-3 rounded-lg border border-slate-800">
+                            <li><span class="text-emerald-400">• Driver U2:</span> Controla <strong>Motor 1 (<code class="text-amber-300">J2</code>)</strong> con LEDs <code class="text-emerald-300">DS1/DS2</code> (<code class="text-slate-400">R2, R10</code> de 1 kΩ) y <strong>Motor 2 (<code class="text-amber-300">J5</code>)</strong> con LEDs <code class="text-emerald-300">DS3/DS4</code> (<code class="text-slate-400">R11, R12</code> de 1 kΩ).</li>
+                            <li><span class="text-emerald-400">• Driver U3:</span> Controla <strong>Motor 3 (<code class="text-amber-300">J7</code>)</strong> con LEDs <code class="text-emerald-300">DS6/DS7</code> (<code class="text-slate-400">R14, R15</code> de 1 kΩ) y <strong>Motor 4 (<code class="text-amber-300">J8</code>)</strong> con LEDs <code class="text-emerald-300">DS8/DS9</code> (<code class="text-slate-400">R16, R17</code> de 1 kΩ).</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 3: SIMULADOR INTERACTIVO Y TABLA DE VERDAD
+                 ========================================== -->
+            <section id="simulador" class="doc-section space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <h2 class="docs-heading text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-mono text-sm">03</span>
+                        <span>Simulador Interactivo de Puentes H y Tabla de Verdad</span>
+                        <a href="#simulador" class="anchor-hash opacity-0 text-slate-500 hover:text-anahuac transition text-base">#</a>
+                    </h2>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                        <i class="fa-solid fa-play mr-1"></i> Interactivo para Demostración en Clase
+                    </span>
+                </div>
+
+                <p class="text-slate-300 text-sm leading-relaxed">
+                    Acciona los interruptores virtuales de la bornera <code class="text-purple-300 font-mono">J1 (IN1–IN8)</code> o utiliza los perfiles preconfigurados para observar en tiempo real la respuesta de las resistencias Pull-Down, el encendido de los 9 indicadores LED verdes (<code class="text-emerald-300 font-mono">DS1–DS9</code>) y el sentido de giro en las borneras de salida <code class="text-amber-300 font-mono">J2, J5, J7 y J8</code>.
+                </p>
+
+                <!-- Interactive Hardware Simulator Panel -->
+                <div class="bg-slate-900 border-2 border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-6">
+                    <!-- Top Power & Quick Presets Row -->
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+                        <!-- Master Power & Fuse Controls -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <!-- Fuse XF1 Toggle -->
+                            <button id="simFuseBtn" onclick="toggleSimFuse()" class="px-3.5 py-2 rounded-xl font-mono text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 flex items-center gap-2 transition">
+                                <i class="fa-solid fa-shield-bolt"></i>
+                                <span>Fusible XF1: <strong id="simFuseLabel">INTACTO</strong></span>
+                            </button>
+
+                            <!-- Jumper J6 Toggle -->
+                            <button id="simJ6Btn" onclick="toggleSimJ6()" class="px-3.5 py-2 rounded-xl font-mono text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 flex items-center gap-2 transition">
+                                <i class="fa-solid fa-link"></i>
+                                <span>Puente J6 (+12V): <strong id="simJ6Label">CERRADO</strong></span>
+                            </button>
+
+                            <!-- Main Power LED DS5 & U1 Status -->
+                            <div class="flex items-center gap-2.5 bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800 font-mono text-xs">
+                                <div id="ledDS5" class="w-3.5 h-3.5 rounded-full border led-on-green transition-all"></div>
+                                <span>DS5 (+12V): <strong id="ds5Text" class="text-emerald-400">ON</strong></span>
+                                <span class="text-slate-700">|</span>
+                                <span>U1 Salida: <strong id="u1Text" class="text-cyan-400">+5.0V</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Scenario Presets -->
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-xs font-mono text-slate-400 mr-1">Escenarios:</span>
+                            <button onclick="applySimPreset([0,0,0,0,0,0,0,0])" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700 transition">
+                                Paro Total (0V)
+                            </button>
+                            <button onclick="applySimPreset([1,0,1,0,1,0,1,0])" class="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-xs font-mono text-emerald-300 border border-emerald-500/30 transition">
+                                4× Horario (CW)
+                            </button>
+                            <button onclick="applySimPreset([0,1,0,1,0,1,0,1])" class="px-2.5 py-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-xs font-mono text-amber-300 border border-amber-500/30 transition">
+                                4× Antihorario (CCW)
+                            </button>
+                            <button onclick="applySimPreset([1,1,1,1,1,1,1,1])" class="px-2.5 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-xs font-mono text-rose-300 border border-rose-500/30 transition">
+                                Freno Activo (1,1)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Middle: 4 Interactive Motor Channels (2x2 Grid) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        
+                        <!-- MOTOR 1 CARD (U2 - Bridge A - J2) -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                                <div>
+                                    <span class="text-[11px] font-mono text-emerald-400 font-semibold">DRIVER U2 (L293D #1) • PUENTE A</span>
+                                    <h3 class="text-base font-bold text-white">Motor DC 1 — Bornera <code class="text-amber-400 font-mono">J2</code></h3>
+                                </div>
+                                <span id="m1StateBadge" class="px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                    DETENIDO (0V)
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                                <!-- Switches IN1 / IN2 -->
+                                <div class="sm:col-span-7 space-y-2.5 font-mono text-xs">
+                                    <!-- Switch IN1 -->
+                                    <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <div>
+                                            <div class="text-white font-semibold">J1-Pin 1 (<span class="text-purple-400">U1_IN1</span>)</div>
+                                            <div class="text-[10px] text-slate-400">Pull-Down <code class="text-slate-300">R1</code> • Salida <code class="text-emerald-300">OUT1</code></div>
+                                        </div>
+                                        <button id="swBtn0" onclick="toggleSimInput(0)" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]">
+                                            LOW (0V)
+                                        </button>
+                                    </div>
+                                    <!-- Switch IN2 -->
+                                    <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <div>
+                                            <div class="text-white font-semibold">J1-Pin 2 (<span class="text-purple-400">U1_IN2</span>)</div>
+                                            <div class="text-[10px] text-slate-400">Pull-Down <code class="text-slate-300">R3</code> • Salida <code class="text-emerald-300">OUT2</code></div>
+                                        </div>
+                                        <button id="swBtn1" onclick="toggleSimInput(1)" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]">
+                                            LOW (0V)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Visual Motor Rotor + LEDs DS1 & DS2 -->
+                                <div class="sm:col-span-5 flex flex-col items-center justify-center bg-slate-900/70 p-3 rounded-xl border border-slate-800/80">
+                                    <div class="relative w-20 h-20 rounded-full border-4 border-slate-700 bg-slate-950 flex items-center justify-center shadow-inner">
+                                        <div id="rotorM1" class="w-14 h-14 rounded-full border-2 border-dashed border-slate-500 flex items-center justify-center">
+                                            <i class="fa-solid fa-fan text-2xl text-slate-300"></i>
+                                        </div>
+                                        <span class="absolute -bottom-2 px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-amber-300 border border-slate-700">M1 (J2)</span>
+                                    </div>
+
+                                    <!-- LEDs DS1 & DS2 -->
+                                    <div class="flex items-center gap-4 mt-4 font-mono text-[11px]">
+                                        <div class="flex items-center gap-1.5">
+                                            <div id="ledDS1" class="w-3 h-3 rounded-full border led-off transition-all"></div>
+                                            <span class="text-slate-300">DS1 <span class="text-slate-500">(R2)</span></span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div id="ledDS2" class="w-3 h-3 rounded-full border led-off transition-all"></div>
+                                            <span class="text-slate-300">DS2 <span class="text-slate-500">(R10)</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MOTOR 2 CARD (U2 - Bridge B - J5) -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                                <div>
+                                    <span class="text-[11px] font-mono text-emerald-400 font-semibold">DRIVER U2 (L293D #1) • PUENTE B</span>
+                                    <h3 class="text-base font-bold text-white">Motor DC 2 — Bornera <code class="text-amber-400 font-mono">J5</code></h3>
+                                </div>
+                                <span id="m2StateBadge" class="px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                    DETENIDO (0V)
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                                <!-- Switches IN3 / IN4 -->
+                                <div class="sm:col-span-7 space-y-2.5 font-mono text-xs">
+                                    <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <div>
+                                            <div class="text-white font-semibold">J1-Pin 3 (<span class="text-purple-400">U1_IN3</span>)</div>
+                                            <div class="text-[10px] text-slate-400">Pull-Down <code class="text-slate-300">R4</code> • Salida <code class="text-emerald-300">OUT3</code></div>
+                                        </div>
+                                        <button id="swBtn2" onclick="toggleSimInput(2)" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]">
+                                            LOW (0V)
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <div>
+                                            <div class="text-white font-semibold">J1-Pin 4 (<span class="text-purple-400">U1_IN4</span>)</div>
+                                            <div class="text-[10px] text-slate-400">Pull-Down <code class="text-slate-300">R5</code> • Salida <code class="text-emerald-300">OUT4</code></div>
+                                        </div>
+                                        <button id="swBtn3" onclick="toggleSimInput(3)" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]">
+                                            LOW (0V)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Visual Motor Rotor + LEDs DS3 & DS4 -->
+                                <div class="sm:col-span-5 flex flex-col items-center justify-center bg-slate-900/70 p-3 rounded-xl border border-slate-800/80">
+                                    <div class="relative w-20 h-20 rounded-full border-4 border-slate-700 bg-slate-950 flex items-center justify-center shadow-inner">
+                                        <div id="rotorM2" class="w-14 h-14 rounded-full border-2 border-dashed border-slate-500 flex items-center justify-center">
+                                            <i class="fa-solid fa-fan text-2xl text-slate-300"></i>
+                                        </div>
+                                        <span class="absolute -bottom-2 px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-amber-300 border border-slate-700">M2 (J5)</span>
+                                    </div>
+
+                                    <div class="flex items-center gap-4 mt-4 font-mono text-[11px]">
+                                        <div class="flex items-center gap-1.5">
+                                            <div id="ledDS3" class="w-3 h-3 rounded-full border led-off transition-all"></div>
+                                            <span class="text-slate-300">DS3 <span class="text-slate-500">(R11)</span></span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div id="ledDS4" class="w-3 h-3 rounded-full border led-off transition-all"></div>
+                                            <span class="text-slate-300">DS4 <span class="text-slate-500">(R12)</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MOTOR 3 CARD (U3 - Bridge A - J7) -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                                <div>
+                                    <span class="text-[11px] font-mono text-cyan-400 font-semibold">DRIVER U3 (L293D #2) • PUENTE A</span>
+                                    <h3 class="text-base font-bold text-white">Motor DC 3 — Bornera <code class="text-amber-400 font-mono">J7</code></h3>
+                                </div>
+                                <span id="m3StateBadge" class="px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                    DETENIDO (0V)
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                                <!-- Switches IN5 / IN6 -->
+                                <div class="sm:col-span-7 space-y-2.5 font-mono text-xs">
+                                    <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <div>
+                                            <div class="text-white font-semibold">J1-Pin 5 (<span class="text-purple-400">U2_IN1</span>)</div>
+                                            <div class="text-[10px] text-slate-400">Pull-Down <code class="text-slate-300">R6</code> • Salida <code class="text-cyan-300">U2_OUT1</code></div>
+                                        </div>
+                                        <button id="swBtn4" onclick="toggleSimInput(4)" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]">
+                                            LOW (0V)
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <div>
+                                            <div class="text-white font-semibold">J1-Pin 6 (<span class="text-purple-400">U2_IN2</span>)</div>
+                                            <div class="text-[10px] text-slate-400">Pull-Down <code class="text-slate-300">R7</code> • Salida <code class="text-cyan-300">U2_OUT2</code></div>
+                                        </div>
+                                        <button id="swBtn5" onclick="toggleSimInput(5)" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]">
+                                            LOW (0V)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Visual Motor Rotor + LEDs DS6 & DS7 -->
+                                <div class="sm:col-span-5 flex flex-col items-center justify-center bg-slate-900/70 p-3 rounded-xl border border-slate-800/80">
+                                    <div class="relative w-20 h-20 rounded-full border-4 border-slate-700 bg-slate-950 flex items-center justify-center shadow-inner">
+                                        <div id="rotorM3" class="w-14 h-14 rounded-full border-2 border-dashed border-slate-500 flex items-center justify-center">
+                                            <i class="fa-solid fa-fan text-2xl text-slate-300"></i>
+                                        </div>
+                                        <span class="absolute -bottom-2 px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-amber-300 border border-slate-700">M3 (J7)</span>
+                                    </div>
+
+                                    <div class="flex items-center gap-4 mt-4 font-mono text-[11px]">
+                                        <div class="flex items-center gap-1.5">
+                                            <div id="ledDS6" class="w-3 h-3 rounded-full border led-off transition-all"></div>
+                                            <span class="text-slate-300">DS6 <span class="text-slate-500">(R14)</span></span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div id="ledDS7" class="w-3 h-3 rounded-full border led-off transition-all"></div>
+                                            <span class="text-slate-300">DS7 <span class="text-slate-500">(R15)</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MOTOR 4 CARD (U3 - Bridge B - J8) -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                                <div>
+                                    <span class="text-[11px] font-mono text-cyan-400 font-semibold">DRIVER U3 (L293D #2) • PUENTE B</span>
+                                    <h3 class="text-base font-bold text-white">Motor DC 4 — Bornera <code class="text-amber-400 font-mono">J8</code></h3>
+                                </div>
+                                <span id="m4StateBadge" class="px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                    DETENIDO (0V)
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                                <!-- Switches IN7 / IN8 -->
+                                <div class="sm:col-span-7 space-y-2.5 font-mono text-xs">
+                                    <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <div>
+                                            <div class="text-white font-semibold">J1-Pin 7 (<span class="text-purple-400">U2_IN3</span>)</div>
+                                            <div class="text-[10px] text-slate-400">Pull-Down <code class="text-slate-300">R8</code> • Salida <code class="text-cyan-300">U2_OUT3</code></div>
+                                        </div>
+                                        <button id="swBtn6" onclick="toggleSimInput(6)" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]">
+                                            LOW (0V)
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <div>
+                                            <div class="text-white font-semibold">J1-Pin 8 (<span class="text-purple-400">U2_IN4</span>)</div>
+                                            <div class="text-[10px] text-slate-400">Pull-Down <code class="text-slate-300">R9</code> • Salida <code class="text-cyan-300">U2_OUT4</code></div>
+                                        </div>
+                                        <button id="swBtn7" onclick="toggleSimInput(7)" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]">
+                                            LOW (0V)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Visual Motor Rotor + LEDs DS8 & DS9 -->
+                                <div class="sm:col-span-5 flex flex-col items-center justify-center bg-slate-900/70 p-3 rounded-xl border border-slate-800/80">
+                                    <div class="relative w-20 h-20 rounded-full border-4 border-slate-700 bg-slate-950 flex items-center justify-center shadow-inner">
+                                        <div id="rotorM4" class="w-14 h-14 rounded-full border-2 border-dashed border-slate-500 flex items-center justify-center">
+                                            <i class="fa-solid fa-fan text-2xl text-slate-300"></i>
+                                        </div>
+                                        <span class="absolute -bottom-2 px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-amber-300 border border-slate-700">M4 (J8)</span>
+                                    </div>
+
+                                    <div class="flex items-center gap-4 mt-4 font-mono text-[11px]">
+                                        <div class="flex items-center gap-1.5">
+                                            <div id="ledDS8" class="w-3 h-3 rounded-full border led-off transition-all"></div>
+                                            <span class="text-slate-300">DS8 <span class="text-slate-500">(R16)</span></span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div id="ledDS9" class="w-3 h-3 rounded-full border led-off transition-all"></div>
+                                            <span class="text-slate-300">DS9 <span class="text-slate-500">(R17)</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Formal Truth Table per Channel -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+                    <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                        <span class="font-mono text-xs font-semibold text-slate-300">
+                            <i class="fa-solid fa-table text-emerald-400 mr-1.5"></i> Tabla de Verdad por Puente H (<code class="text-emerald-400">EN = +5V Permanente</code>)
+                        </span>
+                        <span class="text-[11px] font-mono text-slate-500">Hoja de Datos Texas Instruments L293DNE</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse font-mono text-xs">
+                            <thead>
+                                <tr class="bg-slate-950/60 text-slate-400 border-b border-slate-800">
+                                    <th class="py-2.5 px-4">Enable (1/2EN, 3/4EN)</th>
+                                    <th class="py-2.5 px-4">Entrada A (IN_A)</th>
+                                    <th class="py-2.5 px-4">Entrada B (IN_B)</th>
+                                    <th class="py-2.5 px-4">Salida Y_A / Y_B</th>
+                                    <th class="py-2.5 px-4">LEDs Testigo (DS_A / DS_B)</th>
+                                    <th class="py-2.5 px-4">Respuesta del Motor DC</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/70">
+                                <tr>
+                                    <td class="py-2.5 px-4 text-emerald-400 font-semibold">HIGH (+5V fijo)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">LOW (0V por Pull-Down)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">LOW (0V por Pull-Down)</td>
+                                    <td class="py-2.5 px-4 text-slate-300">0V / 0V (<code class="text-slate-400">ΔV = 0V</code>)</td>
+                                    <td class="py-2.5 px-4"><span class="text-slate-500">OFF / OFF</span></td>
+                                    <td class="py-2.5 px-4 text-slate-300 font-sans font-medium">Paro / Freno Dinámico Bajo (Cortocircuito a GND)</td>
+                                </tr>
+                                <tr class="bg-emerald-500/5">
+                                    <td class="py-2.5 px-4 text-emerald-400 font-semibold">HIGH (+5V fijo)</td>
+                                    <td class="py-2.5 px-4 text-emerald-300 font-bold">HIGH (+5V de J3)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">LOW (0V por Pull-Down)</td>
+                                    <td class="py-2.5 px-4 text-emerald-300">+12V / 0V (<code class="text-emerald-400">ΔV = +12V</code>)</td>
+                                    <td class="py-2.5 px-4"><span class="text-emerald-400 font-bold">ON</span> / <span class="text-slate-500">OFF</span></td>
+                                    <td class="py-2.5 px-4 text-emerald-300 font-sans font-semibold">Giro en Sentido Horario (CW / Avance)</td>
+                                </tr>
+                                <tr class="bg-amber-500/5">
+                                    <td class="py-2.5 px-4 text-emerald-400 font-semibold">HIGH (+5V fijo)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">LOW (0V por Pull-Down)</td>
+                                    <td class="py-2.5 px-4 text-amber-300 font-bold">HIGH (+5V de J3)</td>
+                                    <td class="py-2.5 px-4 text-amber-300">0V / +12V (<code class="text-amber-400">ΔV = -12V</code>)</td>
+                                    <td class="py-2.5 px-4"><span class="text-slate-500">OFF</span> / <span class="text-emerald-400 font-bold">ON</span></td>
+                                    <td class="py-2.5 px-4 text-amber-300 font-sans font-semibold">Giro en Sentido Antihorario (CCW / Reversa)</td>
+                                </tr>
+                                <tr class="bg-rose-500/5">
+                                    <td class="py-2.5 px-4 text-emerald-400 font-semibold">HIGH (+5V fijo)</td>
+                                    <td class="py-2.5 px-4 text-rose-300 font-bold">HIGH (+5V de J3)</td>
+                                    <td class="py-2.5 px-4 text-rose-300 font-bold">HIGH (+5V de J3)</td>
+                                    <td class="py-2.5 px-4 text-rose-300">+12V / +12V (<code class="text-rose-400">ΔV = 0V</code>)</td>
+                                    <td class="py-2.5 px-4"><span class="text-emerald-400 font-bold">ON / ON</span> (Ambos encendidos)</td>
+                                    <td class="py-2.5 px-4 text-rose-300 font-sans font-semibold">Freno Rápido Activo Alto (Fast Motor Stop)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 4: ESQUEMÁTICO, PCB 3D Y MANUFACTURA (DFM)
+                 ========================================== -->
+            <section id="esquematico-pcb" class="doc-section space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="docs-heading text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 flex items-center justify-center font-mono text-sm">04</span>
+                        <span>Esquemático, Modelado 3D de PCB y Adaptaciones de Manufactura</span>
+                        <a href="#esquematico-pcb" class="anchor-hash opacity-0 text-slate-500 hover:text-anahuac transition text-base">#</a>
+                    </h2>
+                    <span class="text-xs font-mono text-slate-500 hidden sm:inline">docs/hardware/pcb-dfm</span>
+                </div>
+
+                <!-- Interactive Schematic & 3D PCB Cards (with File Loader + Lightbox Zoom) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Card 1: Schematic Diagram -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col justify-between shadow-lg">
+                        <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="font-mono text-xs font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-project-diagram text-anahuac"></i> Diagrama Esquemático Altium
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="cursor-pointer px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono text-cyan-300 border border-slate-700 transition">
+                                    <i class="fa-solid fa-upload mr-1"></i> Cargar Captura
+                                    <input type="file" accept="image/*" class="hidden" onchange="loadCustomImage(event, 'schematicImgPreview', 'schematicSvgFallback')">
+                                </label>
+                                <button onclick="openLightbox('schematic')" class="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs" title="Ampliar a Pantalla Completa">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Preview Container -->
+                        <div class="p-4 bg-slate-950 flex items-center justify-center min-h-[290px] relative cursor-pointer" onclick="openLightbox('schematic')">
+                            <!-- Custom Image Preview (Hidden until user selects file) -->
+                            <img id="schematicImgPreview" src="" alt="Esquemático Cargado" class="hidden max-h-[320px] w-auto object-contain rounded-lg border border-slate-800">
+
+                            <!-- Built-in Vector Representation of the Exact Schematic -->
+                            <svg id="schematicSvgFallback" viewBox="0 0 680 360" class="w-full h-auto rounded-lg bg-[#fffdf9] border border-slate-700 p-2 shadow-inner">
+                                <!-- Grid lines -->
+                                <defs>
+                                    <pattern id="schGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.7"/>
+                                    </pattern>
+                                </defs>
+                                <rect width="680" height="360" fill="url(#schGrid)"/>
+                                
+                                <!-- Power Input & Reg Top Left -->
+                                <rect x="18" y="20" width="210" height="105" fill="#fff" stroke="#1e293b" stroke-width="1.5" rx="4"/>
+                                <text x="26" y="36" fill="#0f172a" font-family="monospace" font-size="10" font-weight="bold">ALIMENTACIÓN + REGULADOR U1</text>
+                                <text x="26" y="54" fill="#be123c" font-family="monospace" font-size="9">J4(+12V_IN) ──[XF1 Fusible]── J6(+12V)</text>
+                                <text x="26" y="70" fill="#15803d" font-family="monospace" font-size="9">DS5 (LED Verde) + R13 (1kΩ) ──► GND</text>
+                                <text x="26" y="88" fill="#0369a1" font-family="monospace" font-size="9">U1 (TO-220): IN(+12V) | GND | OUT(+5V)</text>
+                                <text x="26" y="104" fill="#475569" font-family="monospace" font-size="9">Desacoplo: C1 (0.1µF) y C2 (0.1µF)</text>
+
+                                <!-- Control & Pull-down Bottom Left -->
+                                <rect x="18" y="140" width="210" height="200" fill="#fff" stroke="#1e293b" stroke-width="1.5" rx="4"/>
+                                <text x="26" y="158" fill="#0f172a" font-family="monospace" font-size="10" font-weight="bold">BORNERAS CONTROL + PULL-DOWN</text>
+                                <text x="26" y="176" fill="#7e22ce" font-family="monospace" font-size="9">J1 (8 Pines): U1_IN1..4 / U2_IN1..4</text>
+                                <text x="26" y="194" fill="#b45309" font-family="monospace" font-size="9">Red Pull-Down a GND:</text>
+                                <text x="26" y="210" fill="#334155" font-family="monospace" font-size="8.5">R1, R3, R4, R5, R6, R7, R8, R9</text>
+                                <text x="26" y="224" fill="#64748b" font-family="monospace" font-size="8">(10kΩ Esq / 100kΩ 1% 0.25W BOM)</text>
+                                <line x1="26" y1="238" x2="215" y2="238" stroke="#cbd5e1" stroke-width="1"/>
+                                <text x="26" y="256" fill="#0369a1" font-family="monospace" font-size="9" font-weight="bold">J3 (8 Pines): Bus Común +5V</text>
+                                <text x="26" y="272" fill="#475569" font-family="monospace" font-size="8.5">Pines 1..8 unidos a +5V para</text>
+                                <text x="26" y="286" fill="#475569" font-family="monospace" font-size="8.5">alimentar switches externos</text>
+
+                                <!-- Driver U2 Top Right -->
+                                <rect x="250" y="20" width="412" height="150" fill="#fff" stroke="#15803d" stroke-width="1.8" rx="4"/>
+                                <text x="262" y="38" fill="#15803d" font-family="monospace" font-size="10" font-weight="bold">U2: L293DNE #1 (MOTORES 1 Y 2)</text>
+                                <text x="262" y="56" fill="#0f172a" font-family="monospace" font-size="9">Pin 16 (VCC1) = +5V | Pin 1,9 (1/2EN, 3/4EN) = +5V</text>
+                                <text x="262" y="72" fill="#be123c" font-family="monospace" font-size="9">Pin 8 (VCC2) = +12V | Pines 4,5,12,13 = GND &amp; HSINK</text>
+                                <text x="262" y="94" fill="#0369a1" font-family="monospace" font-size="9">• Salida 1Y/2Y ──► Bornera J2 (Motor 1)</text>
+                                <text x="274" y="108" fill="#15803d" font-family="monospace" font-size="8.5">LEDs: DS1 + R2(1kΩ) | DS2 + R10(1kΩ)</text>
+                                <text x="262" y="128" fill="#0369a1" font-family="monospace" font-size="9">• Salida 3Y/4Y ──► Bornera J5 (Motor 2)</text>
+                                <text x="274" y="142" fill="#15803d" font-family="monospace" font-size="8.5">LEDs: DS3 + R11(1kΩ) | DS4 + R12(1kΩ)</text>
+
+                                <!-- Driver U3 Bottom Right -->
+                                <rect x="250" y="190" width="412" height="150" fill="#fff" stroke="#0369a1" stroke-width="1.8" rx="4"/>
+                                <text x="262" y="208" fill="#0369a1" font-family="monospace" font-size="10" font-weight="bold">U3: L293DNE #2 (MOTORES 3 Y 4)</text>
+                                <text x="262" y="226" fill="#0f172a" font-family="monospace" font-size="9">Pin 16 (VCC1) = +5V | Pin 1,9 (1/2EN, 3/4EN) = +5V</text>
+                                <text x="262" y="242" fill="#be123c" font-family="monospace" font-size="9">Pin 8 (VCC2) = +12V | Pines 4,5,12,13 = GND &amp; HSINK</text>
+                                <text x="262" y="264" fill="#0369a1" font-family="monospace" font-size="9">• Salida 1Y/2Y ──► Bornera J7 (Motor 3)</text>
+                                <text x="274" y="278" fill="#15803d" font-family="monospace" font-size="8.5">LEDs: DS6 + R14(1kΩ) | DS7 + R15(1kΩ)</text>
+                                <text x="262" y="298" fill="#0369a1" font-family="monospace" font-size="9">• Salida 3Y/4Y ──► Bornera J8 (Motor 4)</text>
+                                <text x="274" y="312" fill="#15803d" font-family="monospace" font-size="8.5">LEDs: DS8 + R16(1kΩ) | DS9 + R17(1kΩ)</text>
+                            </svg>
+                        </div>
+
+                        <div class="px-4 py-2.5 bg-slate-950 border-t border-slate-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                            <span>Usa "Cargar Captura" para adjuntar tu PNG del esquemático</span>
+                            <span class="text-anahuac">Click para Zoom</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Altium 3D PCB Render -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col justify-between shadow-lg">
+                        <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                            <div>
+                                <span class="font-mono text-xs font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-cubes text-emerald-400"></i> Vista 3D de la PCB (Altium Designer)
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="cursor-pointer px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono text-emerald-300 border border-slate-700 transition">
+                                    <i class="fa-solid fa-upload mr-1"></i> Cargar Render 3D
+                                    <input type="file" accept="image/*" class="hidden" onchange="loadCustomImage(event, 'pcb3dImgPreview', 'pcb3dSvgFallback')">
+                                </label>
+                                <button onclick="openLightbox('pcb3d')" class="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs" title="Ampliar a Pantalla Completa">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Preview Container -->
+                        <div class="p-4 bg-slate-950 flex items-center justify-center min-h-[290px] relative cursor-pointer" onclick="openLightbox('pcb3d')">
+                            <img id="pcb3dImgPreview" src="" alt="Render 3D PCB" class="hidden max-h-[320px] w-auto object-contain rounded-lg border border-slate-800">
+
+                            <!-- High-Detail Vector Replica of the Green PCB from Screenshot -->
+                            <svg id="pcb3dSvgFallback" viewBox="0 0 680 360" class="w-full h-auto rounded-lg bg-[#091912] border border-emerald-800/60 p-2 shadow-inner">
+                                <!-- Green Solder Mask Board -->
+                                <rect x="35" y="18" width="610" height="324" rx="8" fill="#115e38" stroke="#22c55e" stroke-width="2.5"/>
+                                <!-- Copper Traces (Decorative accurate routing) -->
+                                <path d="M 90 60 L 210 60 L 240 90 L 420 90" stroke="#16a34a" stroke-width="4" fill="none" opacity="0.7"/>
+                                <path d="M 120 270 L 310 270 L 350 220 L 540 220" stroke="#16a34a" stroke-width="3" fill="none" opacity="0.7"/>
+                                <path d="M 220 45 L 550 45" stroke="#16a34a" stroke-width="5" fill="none" opacity="0.6"/>
+
+                                <!-- Top Edge: J6, J2, DS1, DS2, R13, DS5 -->
+                                <rect x="115" y="24" width="46" height="28" fill="#2563eb" stroke="#93c5fd" stroke-width="1.2" rx="2"/>
+                                <text x="126" y="42" fill="#fff" font-family="monospace" font-size="9" font-weight="bold">J6</text>
+
+                                <rect x="285" y="24" width="46" height="28" fill="#2563eb" stroke="#93c5fd" stroke-width="1.2" rx="2"/>
+                                <text x="296" y="42" fill="#fff" font-family="monospace" font-size="9" font-weight="bold">J2</text>
+
+                                <!-- LEDs DS1, DS2, DS5 -->
+                                <circle cx="355" cy="40" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <text x="346" y="57" fill="#fff" font-family="monospace" font-size="7.5">DS1</text>
+                                <circle cx="380" cy="40" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <text x="371" y="57" fill="#fff" font-family="monospace" font-size="7.5">DS2</text>
+                                <circle cx="495" cy="52" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <text x="486" y="69" fill="#fff" font-family="monospace" font-size="7.5">DS5</text>
+
+                                <!-- Left Edge: J4 (+12V_IN), XF1 Fuse, J3 (8-pin) -->
+                                <rect x="44" y="52" width="32" height="44" fill="#2563eb" stroke="#93c5fd" stroke-width="1.2" rx="2"/>
+                                <text x="52" y="78" fill="#fff" font-family="monospace" font-size="9" font-weight="bold">J4</text>
+
+                                <rect x="92" y="76" width="28" height="90" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5" rx="3"/>
+                                <text x="97" y="125" fill="#f87171" font-family="monospace" font-size="8.5" font-weight="bold">XF1</text>
+
+                                <rect x="44" y="148" width="32" height="145" fill="#2563eb" stroke="#93c5fd" stroke-width="1.2" rx="2"/>
+                                <text x="52" y="224" fill="#fff" font-family="monospace" font-size="9" font-weight="bold">J3</text>
+
+                                <!-- Center Left: J1 (8-pin) & Pull-down Resistors R1, R3-R9 -->
+                                <rect x="148" y="138" width="32" height="145" fill="#2563eb" stroke="#93c5fd" stroke-width="1.2" rx="2"/>
+                                <text x="156" y="214" fill="#fff" font-family="monospace" font-size="9" font-weight="bold">J1</text>
+
+                                <!-- Pull-Down Resistors Bank -->
+                                <rect x="195" y="138" width="60" height="145" fill="#0f3923" stroke="#eab308" stroke-width="1" stroke-dasharray="3 2" rx="4"/>
+                                <text x="202" y="156" fill="#fde047" font-family="monospace" font-size="8" font-weight="bold">PULL-DOWN</text>
+                                <text x="202" y="172" fill="#e2e8f0" font-family="monospace" font-size="7.5">R1, R3..R9</text>
+                                <text x="202" y="186" fill="#94a3b8" font-family="monospace" font-size="7">8× Axial</text>
+
+                                <!-- Center: U2 & U3 (L293DNE on DIP-16 Sockets) -->
+                                <rect x="295" y="96" width="58" height="105" fill="#1e293b" stroke="#e2e8f0" stroke-width="1.5" rx="3"/>
+                                <text x="310" y="144" fill="#4ade80" font-family="monospace" font-size="10" font-weight="bold">U2</text>
+                                <text x="301" y="158" fill="#cbd5e1" font-family="monospace" font-size="7.5">L293DNE</text>
+                                <text x="301" y="170" fill="#fbbf24" font-family="monospace" font-size="6.5">[Zócalo 16P]</text>
+
+                                <rect x="435" y="146" width="58" height="105" fill="#1e293b" stroke="#e2e8f0" stroke-width="1.5" rx="3"/>
+                                <text x="450" y="194" fill="#38bdf8" font-family="monospace" font-size="10" font-weight="bold">U3</text>
+                                <text x="441" y="208" fill="#cbd5e1" font-family="monospace" font-size="7.5">L293DNE</text>
+                                <text x="441" y="220" fill="#fbbf24" font-family="monospace" font-size="6.5">[Zócalo 16P]</text>
+
+                                <!-- U1 TO-220 Regulator + C1, C2 -->
+                                <rect x="468" y="88" width="44" height="22" fill="#334155" stroke="#cbd5e1" stroke-width="1.5" rx="2"/>
+                                <text x="476" y="103" fill="#38bdf8" font-family="monospace" font-size="9" font-weight="bold">U1</text>
+                                <circle cx="445" cy="98" r="5" fill="#eab308"/>
+                                <text x="438" y="114" fill="#fde047" font-family="monospace" font-size="7.5">C1</text>
+                                <circle cx="525" cy="98" r="5" fill="#eab308"/>
+                                <text x="518" y="114" fill="#fde047" font-family="monospace" font-size="7.5">C2</text>
+
+                                <!-- Right Edge: J7 (Motor 3), DS6, DS7 -->
+                                <rect x="598" y="115" width="34" height="46" fill="#2563eb" stroke="#93c5fd" stroke-width="1.2" rx="2"/>
+                                <text x="607" y="142" fill="#fff" font-family="monospace" font-size="9" font-weight="bold">J7</text>
+                                <circle cx="578" cy="112" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <circle cx="578" cy="132" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <text x="546" y="125" fill="#fff" font-family="monospace" font-size="7.5">DS6/7</text>
+
+                                <!-- Bottom Edge: J5 (Motor 2), DS3/4, J8 (Motor 4), DS8/9 -->
+                                <rect x="335" y="300" width="46" height="28" fill="#2563eb" stroke="#93c5fd" stroke-width="1.2" rx="2"/>
+                                <text x="348" y="318" fill="#fff" font-family="monospace" font-size="9" font-weight="bold">J5</text>
+                                <circle cx="300" cy="312" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <circle cx="318" cy="312" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <text x="292" y="298" fill="#fff" font-family="monospace" font-size="7.5">DS3/DS4</text>
+
+                                <rect x="442" y="300" width="46" height="28" fill="#2563eb" stroke="#93c5fd" stroke-width="1.2" rx="2"/>
+                                <text x="455" y="318" fill="#fff" font-family="monospace" font-size="9" font-weight="bold">J8</text>
+                                <circle cx="508" cy="312" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <circle cx="526" cy="312" r="6" fill="#22c55e" stroke="#bbf7d0" stroke-width="1"/>
+                                <text x="498" y="298" fill="#fff" font-family="monospace" font-size="7.5">DS8/DS9</text>
+                            </svg>
+                        </div>
+
+                        <div class="px-4 py-2.5 bg-slate-950 border-t border-slate-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                            <span>Distribución perimetral de borneras J1–J8</span>
+                            <span class="text-emerald-400">Click para Zoom</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Engineering Callout: Physical Manufacturing Adaptations (DFM) -->
+                <div class="bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border-l-4 border-amber-500 rounded-r-xl p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-industry text-amber-400"></i>
+                            <span>Adaptaciones de Manufactura y Ensamble en Placa Física (DFM)</span>
+                        </h3>
+                        <span class="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-xs">Notas de Ingeniería</span>
+                    </div>
+
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        Durante la transición del diseño CAD en Altium Designer hacia la manufactura y soldadura del prototipo físico, se implementaron tres mejoras prácticas orientadas a la confiabilidad y facilidad de mantenimiento en laboratorio:
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                        <!-- Adaptation 1 -->
+                        <div class="bg-slate-950/90 border border-slate-800 p-4 rounded-xl">
+                            <div class="font-mono text-xs text-emerald-400 font-bold mb-1">1. Bases / Zócalos DIP-16 (Portapines)</div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                En lugar de soldar directamente los circuitos integrados <code class="font-mono text-white">U2</code> y <code class="font-mono text-white">U3</code> (<code class="font-mono text-emerald-300">L293DNE</code>) al cobre, se soldaron <strong>bases DIP-16</strong>. Esto evita daño térmico al silicio durante el cautín y permite sustituir un puente H en segundos si un motor bloqueado excede la corriente máxima.
+                            </p>
+                        </div>
+
+                        <!-- Adaptation 2 -->
+                        <div class="bg-slate-950/90 border border-slate-800 p-4 rounded-xl">
+                            <div class="font-mono text-xs text-amber-400 font-bold mb-1">2. Adaptación del Portafusibles XF1</div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                El footprint original de librería (<code class="font-mono text-slate-400">696105003002</code>) fue adaptado en el ensamble físico utilizando un portafusibles comercial accesible localmente, conservando intacta la protección en serie entre el pin positivo de <code class="font-mono text-white">J4</code> y la entrada de <code class="font-mono text-white">J6</code>.
+                            </p>
+                        </div>
+
+                        <!-- Adaptation 3 -->
+                        <div class="bg-slate-950/90 border border-slate-800 p-4 rounded-xl">
+                            <div class="font-mono text-xs text-cyan-400 font-bold mb-1">3. Disipación Térmica Pasiva en GND</div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Los 4 pines centrales de cada L293DNE (<code class="font-mono text-white">Pines 4, 5, 12 y 13: HEAT SINK AND GROUND</code>) están interconectados al plano/pista común de tierra (<code class="font-mono text-white">GND</code>), empleando el cobre de la PCB como disipador pasivo de calor.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 5: CARCASA Y DISEÑO MECÁNICO (CASING)
+                 ========================================== -->
+            <section id="carcasa" class="doc-section space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="docs-heading text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-400 flex items-center justify-center font-mono text-sm">05</span>
+                        <span>Diseño Mecánico, Integración y Carcasa (<code class="text-purple-400 font-mono text-base">Enclosure / Casing</code>)</span>
+                        <a href="#carcasa" class="anchor-hash opacity-0 text-slate-500 hover:text-anahuac transition text-base">#</a>
+                    </h2>
+                    <span class="text-xs font-mono text-slate-500 hidden sm:inline">docs/hardware/enclosure</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Left: Mechanical Design Details -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <p class="text-slate-300 text-sm leading-relaxed">
+                            Para proteger la tarjeta electrónica durante las pruebas de laboratorio y operación con los 4 motores DC, se manufacturó una <strong>carcasa física a medida de fabricación directa (sin modelado CAD previo)</strong>, adaptada exactamente a la geometría de la PCB y a la disposición perimetral de sus conectores.
+                        </p>
+
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
+                            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-check-double text-purple-400"></i> Criterios Funcionales del Encapsulado Físico
+                            </h3>
+                            <ul class="space-y-2.5 text-xs sm:text-sm text-slate-300">
+                                <li class="flex items-start gap-2.5">
+                                    <span class="text-purple-400 font-mono font-bold">01.</span>
+                                    <span><strong>Aislamiento de la Cara Inferior (Bottom Solder Side):</strong> Impide que las terminales soldadas entren en contacto con superficies metálicas, herramientas o virutas conductoras en la mesa de pruebas, previniendo cortocircuitos en el bus de <code class="font-mono text-amber-300">+12V</code>.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <span class="text-purple-400 font-mono font-bold">02.</span>
+                                    <span><strong>Acceso Perimetral a las 8 Borneras (<code class="font-mono text-emerald-300">J1–J8</code>):</strong> Ventanas laterales despejadas para insertar y atornillar el cableado de alimentación (<code class="font-mono">J4, J6</code>), botonera de control (<code class="font-mono">J1, J3</code>) y los 4 motores DC (<code class="font-mono">J2, J5, J7, J8</code>).</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <span class="text-purple-400 font-mono font-bold">03.</span>
+                                    <span><strong>Visibilidad de los 9 LEDs Testigo (<code class="font-mono text-emerald-300">DS1–DS9</code>):</strong> Permite observar en todo momento el indicador de encendido <code class="font-mono">DS5</code> y los 8 indicadores de polaridad de giro sin necesidad de abrir el gabinete.</span>
+                                </li>
+                                <li class="flex items-start gap-2.5">
+                                    <span class="text-purple-400 font-mono font-bold">04.</span>
+                                    <span><strong>Convección y Reemplazo Rápido:</strong> Espacio superior suficiente para alojar la altura adicional de los L293DNE montados sobre sus bases DIP-16, el regulador vertical <code class="font-mono text-cyan-300">U1</code> (TO-220) y el portafusibles <code class="font-mono text-rose-300">XF1</code>.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Right: Interactive Photo Uploader for Casing / Physical Prototype -->
+                    <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col justify-between shadow-lg">
+                        <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                            <span class="font-mono text-xs font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-camera text-purple-400"></i> Evidencia Fotográfica: Carcasa y PCB
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <label class="cursor-pointer px-2.5 py-1 rounded bg-purple-600/20 hover:bg-purple-600/30 text-xs font-mono text-purple-300 border border-purple-500/40 transition">
+                                    <i class="fa-solid fa-upload mr-1"></i> Subir Foto
+                                    <input type="file" accept="image/*" class="hidden" onchange="loadCustomImage(event, 'casingImgPreview', 'casingSvgFallback')">
+                                </label>
+                                <button onclick="openLightbox('casing')" class="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs" title="Ampliar Foto">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-950 flex items-center justify-center min-h-[250px] cursor-pointer" onclick="openLightbox('casing')">
+                            <img id="casingImgPreview" src="" alt="Fotografía de la Carcasa" class="hidden max-h-[280px] w-auto object-contain rounded-lg border border-slate-800">
+
+                            <!-- Default Vector Isometric Casing Diagram -->
+                            <div id="casingSvgFallback" class="text-center p-4 space-y-3 w-full">
+                                <svg viewBox="0 0 420 210" class="w-full h-auto mx-auto rounded-lg bg-slate-900/90 border border-slate-800 p-3">
+                                    <!-- Enclosure Base Box -->
+                                    <rect x="45" y="30" width="330" height="150" rx="12" fill="#1e293b" stroke="#a855f7" stroke-width="2" stroke-dasharray="6 3"/>
+                                    <!-- Inner PCB -->
+                                    <rect x="70" y="48" width="280" height="114" rx="6" fill="#0f5132" stroke="#22c55e" stroke-width="1.8"/>
+                                    <!-- Cutouts indicators -->
+                                    <text x="210" y="22" text-anchor="middle" fill="#d8b4fe" font-family="monospace" font-size="9.5" font-weight="bold">CARCASA PROTECTORA CON ACCESO PERIMETRAL</text>
+                                    <rect x="135" y="88" width="42" height="36" fill="#0f172a" stroke="#94a3b8" rx="2"/>
+                                    <text x="156" y="109" text-anchor="middle" fill="#4ade80" font-family="monospace" font-size="8.5">U2 DIP</text>
+                                    <rect x="225" y="88" width="42" height="36" fill="#0f172a" stroke="#94a3b8" rx="2"/>
+                                    <text x="246" y="109" text-anchor="middle" fill="#38bdf8" font-family="monospace" font-size="8.5">U3 DIP</text>
+                                    <!-- LEDs Viewport -->
+                                    <circle cx="195" cy="64" r="4" fill="#22c55e"/>
+                                    <circle cx="208" cy="64" r="4" fill="#22c55e"/>
+                                    <circle cx="295" cy="64" r="4" fill="#22c55e"/>
+                                    <text x="210" y="174" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="8.5">Haz clic en "Subir Foto" para mostrar la foto real de tu carcasa</text>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="px-4 py-2.5 bg-slate-950 border-t border-slate-800 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                            <span>Gabinete artesanal sin CAD • Aislamiento mecánico</span>
+                            <span class="text-purple-400">Zoom habilitado</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 6: LISTA DE MATERIALES (BOM) Y COSTOS (~$200 MXN)
+                 ========================================== -->
+            <section id="bom" class="doc-section space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <h2 class="docs-heading text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-lg bg-pink-500/20 border border-pink-500/40 text-pink-400 flex items-center justify-center font-mono text-sm">06</span>
+                        <span>Lista de Materiales (<code class="text-pink-400 font-mono text-base">BOM</code>) y Presupuesto</span>
+                        <a href="#bom" class="anchor-hash opacity-0 text-slate-500 hover:text-anahuac transition text-base">#</a>
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span class="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            Costo Total Prototipo: ~$200.00 MXN
+                        </span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+                    <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                        <span class="font-mono text-xs font-semibold text-slate-300">
+                            <i class="fa-solid fa-microchip text-pink-400 mr-1.5"></i> Desglose Oficial de Componentes y Manufactura (11 Partidas)
+                        </span>
+                        <span class="text-xs font-mono text-slate-400">Precios expresados en Pesos Mexicanos (MXN)</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-950/70 text-slate-400 font-mono border-b border-slate-800">
+                                    <th class="py-3 px-4">Designadores</th>
+                                    <th class="py-3 px-4">Componente / Descripción Técnica</th>
+                                    <th class="py-3 px-4">Encapsulado / Footprint</th>
+                                    <th class="py-3 px-4 text-center">Cant.</th>
+                                    <th class="py-3 px-4 text-right">Unitario Est.</th>
+                                    <th class="py-3 px-4 text-right">Subtotal (MXN)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/70 font-mono">
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="py-2.5 px-4 text-emerald-400 font-bold">U2, U3</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Driver cuádruple de medio puente H <strong>L293DNE</strong> (600mA/canal, con diodos internos)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">DIP-16 (300 mil)</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">2</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$28.00</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$56.00</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition bg-slate-950/25">
+                                    <td class="py-2.5 px-4 text-cyan-400 font-bold">Zócalos U2, U3</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Bases portapines de 16 pines (Adaptación física para reemplazo rápido y protección térmica)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">DIP-16 Socket</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">2</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$4.00</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$8.00</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="py-2.5 px-4 text-cyan-400 font-bold">U1</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Regulador de voltaje lineal positivo <strong>+5V DC</strong> (LM7805 / L7805CV)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">TO-220-3</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">1</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$10.00</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$10.00</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition bg-slate-950/25">
+                                    <td class="py-2.5 px-4 text-amber-400 font-bold">C1, C2</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Capacitor cerámico multicapa <strong>0.1 µF (100 nF)</strong>, 50V, ±10%, X7R (<code class="text-slate-400">SR215C104KAA</code>)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">Radial 2-Pin</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">2</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$2.50</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$5.00</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="py-2.5 px-4 text-purple-400 font-bold">J1, J3</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Bornera de tornillo de <strong>8 posiciones</strong> (o 4 bloques acoplables de 2 pines, paso 5.08mm)</td>
+                                    <td class="py-2.5 px-4 text-slate-400">HDR1X8 THT</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">2</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$14.00</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$28.00</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition bg-slate-950/25">
+                                    <td class="py-2.5 px-4 text-amber-400 font-bold">J2, J4, J5, J6, J7, J8</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Bornera de tornillo de <strong>2 posiciones</strong> para motores, entrada +12V y puente de corte</td>
+                                    <td class="py-2.5 px-4 text-slate-400">HDR1X2 THT</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">6</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$4.50</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$27.00</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="py-2.5 px-4 text-emerald-400 font-bold">DS1 – DS9</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">LED Indicador Verde 565nm diffused 3mm T-1 (<code class="text-slate-400">LTL-1CHG</code>) — 1 Power + 8 Salidas</td>
+                                    <td class="py-2.5 px-4 text-slate-400">LED T-1 3mm</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">9</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$1.00</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$9.00</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition bg-slate-950/25">
+                                    <td class="py-2.5 px-4 text-slate-300 font-bold">R1, R3, R4, R5, R6, R7, R8, R9</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Resistencia Pull-Down axial <strong>10 kΩ (Esq.) / 100 kΩ (BOM)</strong> 0.25W 1%</td>
+                                    <td class="py-2.5 px-4 text-slate-400">Axial 0.25W</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">8</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$0.50</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$4.00</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="py-2.5 px-4 text-slate-300 font-bold">R2, R10, R11, R12, R13, R14, R15, R16, R17</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Resistencia limitadora de corriente para LED <strong>1 kΩ</strong> 0.25W</td>
+                                    <td class="py-2.5 px-4 text-slate-400">Axial 0.25W</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">9</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$0.50</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$4.50</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition bg-slate-950/25">
+                                    <td class="py-2.5 px-4 text-rose-400 font-bold">XF1 + Fusible</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Portafusibles para PCB (<code class="text-slate-400">696105003002</code> / adaptado en placa) con cartucho fusible</td>
+                                    <td class="py-2.5 px-4 text-slate-400">THT Adaptado</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">1</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$12.50</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$12.50</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40 transition">
+                                    <td class="py-2.5 px-4 text-anahuac font-bold">PCB + Carcasa</td>
+                                    <td class="py-2.5 px-4 font-sans text-slate-200">Placa virgen, insumos de grabado/soldadura y materiales para carcasa protectora</td>
+                                    <td class="py-2.5 px-4 text-slate-400">Custom</td>
+                                    <td class="py-2.5 px-4 text-center font-bold text-white">1</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-400">$36.00</td>
+                                    <td class="py-2.5 px-4 text-right text-white font-semibold">$36.00</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-slate-950 border-t-2 border-slate-700 font-mono text-sm">
+                                    <td colspan="3" class="py-3.5 px-4 text-slate-300 font-bold">TOTAL DE ELEMENTOS EN PLACA: 43 COMPONENTES</td>
+                                    <td class="py-3.5 px-4 text-center text-emerald-400 font-bold">43</td>
+                                    <td class="py-3.5 px-4 text-right text-slate-400 font-bold">COSTO TOTAL:</td>
+                                    <td class="py-3.5 px-4 text-right text-amber-400 font-extrabold text-base">~$200.00 MXN</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 7: MAPEO COMPLETO DE BORNERAS (PINOUT)
+                 ========================================== -->
+            <section id="pinout" class="doc-section space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h2 class="docs-heading text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-400 flex items-center justify-center font-mono text-sm">07</span>
+                        <span>Referencia Rápida de Conectores y Borneras (<code class="text-blue-400 font-mono text-base">Pinout</code>)</span>
+                        <a href="#pinout" class="anchor-hash opacity-0 text-slate-500 hover:text-anahuac transition text-base">#</a>
+                    </h2>
+                    <span class="text-xs font-mono text-slate-500 hidden sm:inline">docs/hardware/pinout</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+                    <!-- Power Connectors -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                        <div class="text-amber-400 font-bold uppercase flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span>Alimentación y Corte</span>
+                            <span>J4 / J6</span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-300">
+                            <div><strong class="text-white">J4 - Pin 1:</strong> Entrada <code class="text-amber-300">+12V_IN</code> (hacia fusible XF1)</div>
+                            <div><strong class="text-white">J4 - Pin 2:</strong> Referencia común <code class="text-slate-400">GND</code></div>
+                            <div><strong class="text-white">J6 - Pin 1:</strong> Salida de Fusible <code class="text-amber-300">+12V_IN</code></div>
+                            <div><strong class="text-white">J6 - Pin 2:</strong> Bus de Potencia <code class="text-emerald-300">+12V</code> (<code class="text-slate-400">VCC2</code> y <code class="text-slate-400">U1</code>)</div>
+                        </div>
+                    </div>
+
+                    <!-- Control Connectors -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                        <div class="text-purple-400 font-bold uppercase flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span>Entradas Lógicas</span>
+                            <span>J1 / J3</span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-300">
+                            <div><strong class="text-white">J3 (Pines 1–8):</strong> Salida regulada <code class="text-cyan-300">+5V</code> para switches</div>
+                            <div><strong class="text-white">J1 (Pines 1–2):</strong> Control Motor 1 (<code class="text-purple-300">U1_IN1, U1_IN2</code>)</div>
+                            <div><strong class="text-white">J1 (Pines 3–4):</strong> Control Motor 2 (<code class="text-purple-300">U1_IN3, U1_IN4</code>)</div>
+                            <div><strong class="text-white">J1 (Pines 5–6):</strong> Control Motor 3 (<code class="text-purple-300">U2_IN1, U2_IN2</code>)</div>
+                            <div><strong class="text-white">J1 (Pines 7–8):</strong> Control Motor 4 (<code class="text-purple-300">U2_IN3, U2_IN4</code>)</div>
+                        </div>
+                    </div>
+
+                    <!-- Motor Outputs -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                        <div class="text-emerald-400 font-bold uppercase flex items-center justify-between border-b border-slate-800 pb-2">
+                            <span>Salidas a Motores DC</span>
+                            <span>J2 / J5 / J7 / J8</span>
+                        </div>
+                        <div class="space-y-1.5 text-slate-300">
+                            <div><strong class="text-white">J2 (1,2):</strong> Motor 1 (<code class="text-emerald-300">OUT1 / OUT2</code> — LEDs DS1, DS2)</div>
+                            <div><strong class="text-white">J5 (1,2):</strong> Motor 2 (<code class="text-emerald-300">OUT3 / OUT4</code> — LEDs DS3, DS4)</div>
+                            <div><strong class="text-white">J7 (1,2):</strong> Motor 3 (<code class="text-cyan-300">U2_OUT1/2</code> — LEDs DS6, DS7)</div>
+                            <div><strong class="text-white">J8 (1,2):</strong> Motor 4 (<code class="text-cyan-300">U2_OUT3/4</code> — LEDs DS8, DS9)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DOCUMENT FOOTER -->
+            <footer class="pt-8 pb-16 border-t border-slate-800 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-anahuac"></span>
+                    <span>Universidad Anáhuac • Ingeniería Mecatrónica • José Daniel Bobadilla Vega</span>
+                </div>
+                <div>
+                    <span>Primera Revisión: 18/11/2026 • Docsify Hardware Spec</span>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- FLOATING PRESENTATION MODE CONTROLS (Visible when Presentation Mode is active) -->
+    <div id="presentationBar" class="hidden fixed bottom-5 right-5 z-40 bg-slate-900/95 backdrop-blur-md border-2 border-anahuac rounded-2xl px-4 py-2.5 shadow-2xl flex items-center gap-3">
+        <span class="text-xs font-mono text-anahuac font-bold uppercase tracking-wider">
+            <i class="fa-solid fa-chalkboard-user mr-1"></i> Proyección
+        </span>
+        <button onclick="navigateSection(-1)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono border border-slate-700">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Anterior
+        </button>
+        <button onclick="navigateSection(1)" class="px-3 py-1.5 rounded-lg bg-anahuac hover:bg-anahuac-dark text-white text-xs font-mono font-semibold">
+            Siguiente <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+    </div>
+
+    <!-- LIGHTBOX MODAL FOR FULL-SCREEN IMAGE / DIAGRAM ZOOM -->
+    <div id="lightboxModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8">
+        <div class="relative max-w-6xl w-full bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <span id="lightboxTitle" class="font-mono text-sm font-bold text-white">Vista Ampliada</span>
+                <button onclick="closeLightbox()" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white text-xs font-mono transition">
+                    <i class="fa-solid fa-xmark mr-1"></i> Cerrar (ESC)
+                </button>
+            </div>
+            <div id="lightboxBody" class="p-6 flex items-center justify-center max-h-[82vh] overflow-auto bg-slate-950">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPORT DOCSIFY / GITHUB PAGES MODAL -->
+    <div id="exportModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="max-w-4xl w-full bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-brands fa-github text-emerald-400"></i>
+                        <span>Publicar en GitHub Pages / Bitbucket con Docsify (<code class="text-emerald-400 font-mono text-xs">README.md</code>)</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Puedes subir directamente este archivo único <code class="font-mono text-amber-300">index.html</code> o usar el archivo <code class="font-mono text-emerald-300">README.md</code> puro en Markdown.</p>
+                </div>
+                <button onclick="closeExportModal()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-4 text-xs">
+                <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-slate-200 space-y-1.5">
+                    <div class="font-bold text-emerald-300 font-mono">¿Cómo publicarlo en 2 minutos en GitHub Pages?</div>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-300">
+                        <li>Crea un repositorio público en GitHub (ej. <code class="font-mono text-white">driver-potencia-l293d</code>).</li>
+                        <li>Sube este archivo <code class="font-mono text-amber-300">index.html</code> y el archivo <code class="font-mono text-emerald-300">README.md</code> de abajo a la raíz del repositorio.</li>
+                        <li>En tu repositorio ve a <strong>Settings → Pages → Branch: main (/root) → Save</strong>.</li>
+                        <li>¡Listo! Tendrás tanto la web interactiva con simulador como el <code class="font-mono text-emerald-300">README.md</code> renderizado en el repositorio.</li>
+                    </ol>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-mono font-bold text-slate-300">Archivo: <code class="text-emerald-400">README.md</code> (Formato Markdown técnico estilo arrowesc)</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="copyMarkdown()" id="copyMdBtn" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-semibold transition">
+                                <i class="fa-solid fa-copy mr-1"></i> Copiar README.md
+                            </button>
+                            <button onclick="downloadMarkdown()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono transition">
+                                <i class="fa-solid fa-download mr-1"></i> Descargar .md
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="markdownOutput" readonly class="w-full h-64 bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-[11px] text-slate-300 focus:outline-none"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // =====================================================
+        // 1. SIMULATOR STATE & LOGIC (8 INPUTS, FUSE, J6, 4 MOTORS)
+        // =====================================================
+        const simState = {
+            fuseIntact: true,
+            j6Closed: true,
+            inputs: [0, 0, 0, 0, 0, 0, 0, 0] // IN1..IN8
+        };
+
+        function toggleSimFuse() {
+            simState.fuseIntact = !simState.fuseIntact;
+            updateSimulatorUI();
+        }
+
+        function toggleSimJ6() {
+            simState.j6Closed = !simState.j6Closed;
+            updateSimulatorUI();
+        }
+
+        function toggleSimInput(index) {
+            simState.inputs[index] = simState.inputs[index] === 1 ? 0 : 1;
+            updateSimulatorUI();
+        }
+
+        function applySimPreset(presetArray) {
+            simState.inputs = [...presetArray];
+            updateSimulatorUI();
+        }
+
+        function updateSimulatorUI() {
+            const has12V = simState.fuseIntact && simState.j6Closed;
+
+            // Update Fuse Button
+            const fuseBtn = document.getElementById('simFuseBtn');
+            const fuseLabel = document.getElementById('simFuseLabel');
+            if (simState.fuseIntact) {
+                fuseLabel.textContent = 'INTACTO';
+                fuseBtn.className = 'px-3.5 py-2 rounded-xl font-mono text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 flex items-center gap-2 transition';
+            } else {
+                fuseLabel.textContent = 'ABIERTO (CORTE)';
+                fuseBtn.className = 'px-3.5 py-2 rounded-xl font-mono text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-2 transition';
+            }
+
+            // Update J6 Button
+            const j6Btn = document.getElementById('simJ6Btn');
+            const j6Label = document.getElementById('simJ6Label');
+            if (simState.j6Closed) {
+                j6Label.textContent = 'CERRADO';
+                j6Btn.className = 'px-3.5 py-2 rounded-xl font-mono text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/40 flex items-center gap-2 transition';
+            } else {
+                j6Label.textContent = 'ABIERTO';
+                j6Btn.className = 'px-3.5 py-2 rounded-xl font-mono text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-2 transition';
+            }
+
+            // Update DS5 Power LED and U1 +5V regulator status
+            const ledDS5 = document.getElementById('ledDS5');
+            const ds5Text = document.getElementById('ds5Text');
+            const u1Text = document.getElementById('u1Text');
+
+            if (has12V) {
+                ledDS5.className = 'w-3.5 h-3.5 rounded-full border led-on-green transition-all';
+                ds5Text.textContent = 'ON';
+                ds5Text.className = 'text-emerald-400';
+                u1Text.textContent = '+5.0V';
+                u1Text.className = 'text-cyan-400';
+            } else {
+                ledDS5.className = 'w-3.5 h-3.5 rounded-full border led-off transition-all';
+                ds5Text.textContent = 'OFF';
+                ds5Text.className = 'text-slate-500';
+                u1Text.textContent = '0.0V';
+                u1Text.className = 'text-rose-400';
+            }
+
+            // Update each of the 8 switch buttons
+            for (let i = 0; i < 8; i++) {
+                const btn = document.getElementById(`swBtn${i}`);
+                const activeHigh = simState.inputs[i] === 1 && has12V;
+                if (simState.inputs[i] === 1) {
+                    btn.textContent = has12V ? 'HIGH (+5V)' : 'SW ON (0V)';
+                    btn.className = has12V
+                        ? 'px-3 py-1.5 rounded-lg font-bold bg-emerald-500 text-slate-950 border border-emerald-300 shadow transition min-w-[78px]'
+                        : 'px-3 py-1.5 rounded-lg font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition min-w-[78px]';
+                } else {
+                    btn.textContent = 'LOW (0V)';
+                    btn.className = 'px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 border border-slate-700 transition min-w-[78px]';
+                }
+            }
+
+            // Evaluate 4 Motor Channels
+            const motorConfigs = [
+                { mIdx: 1, inA: 0, inB: 1, ledA: 'ledDS1', ledB: 'ledDS2', rotor: 'rotorM1', badge: 'm1StateBadge' },
+                { mIdx: 2, inA: 2, inB: 3, ledA: 'ledDS3', ledB: 'ledDS4', rotor: 'rotorM2', badge: 'm2StateBadge' },
+                { mIdx: 3, inA: 4, inB: 5, ledA: 'ledDS6', ledB: 'ledDS7', rotor: 'rotorM3', badge: 'm3StateBadge' },
+                { mIdx: 4, inA: 6, inB: 7, ledA: 'ledDS8', ledB: 'ledDS9', rotor: 'rotorM4', badge: 'm4StateBadge' },
+            ];
+
+            motorConfigs.forEach(cfg => {
+                const a = has12V ? simState.inputs[cfg.inA] : 0;
+                const b = has12V ? simState.inputs[cfg.inB] : 0;
+
+                const ledAEl = document.getElementById(cfg.ledA);
+                const ledBEl = document.getElementById(cfg.ledB);
+                const rotorEl = document.getElementById(cfg.rotor);
+                const badgeEl = document.getElementById(cfg.badge);
+
+                // LED states directly follow output voltages Y_A and Y_B
+                ledAEl.className = a === 1 ? 'w-3 h-3 rounded-full border led-on-green transition-all' : 'w-3 h-3 rounded-full border led-off transition-all';
+                ledBEl.className = b === 1 ? 'w-3 h-3 rounded-full border led-on-green transition-all' : 'w-3 h-3 rounded-full border led-off transition-all';
+
+                if (!has12V) {
+                    rotorEl.className = 'w-14 h-14 rounded-full border-2 border-dashed border-slate-700 flex items-center justify-center opacity-50';
+                    badgeEl.textContent = 'SIN ENERGÍA (0V)';
+                    badgeEl.className = 'px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-slate-900 text-slate-500 border border-slate-800';
+                } else if (a === 1 && b === 0) {
+                    rotorEl.className = 'w-14 h-14 rounded-full border-2 border-dashed border-emerald-400 flex items-center justify-center spin-cw';
+                    badgeEl.textContent = 'HORARIO (CW +12V)';
+                    badgeEl.className = 'px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                } else if (a === 0 && b === 1) {
+                    rotorEl.className = 'w-14 h-14 rounded-full border-2 border-dashed border-amber-400 flex items-center justify-center spin-ccw';
+                    badgeEl.textContent = 'ANTIHORARIO (CCW -12V)';
+                    badgeEl.className = 'px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+                } else if (a === 1 && b === 1) {
+                    rotorEl.className = 'w-14 h-14 rounded-full border-2 border-solid border-rose-500 flex items-center justify-center';
+                    badgeEl.textContent = 'FRENO ACTIVO (1,1)';
+                    badgeEl.className = 'px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                } else {
+                    rotorEl.className = 'w-14 h-14 rounded-full border-2 border-dashed border-slate-500 flex items-center justify-center';
+                    badgeEl.textContent = 'DETENIDO (0V)';
+                    badgeEl.className = 'px-2.5 py-1 rounded-full font-mono text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+                }
+            });
+        }
+
+        // =====================================================
+        // 2. IMAGE LOADER & LIGHTBOX VIEWER FOR PRESENTATION
+        // =====================================================
+        function loadCustomImage(event, imgElementId, svgFallbackId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgEl = document.getElementById(imgElementId);
+                const svgEl = document.getElementById(svgFallbackId);
+                imgEl.src = e.target.result;
+                imgEl.classList.remove('hidden');
+                svgEl.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function openLightbox(type) {
+            const modal = document.getElementById('lightboxModal');
+            const title = document.getElementById('lightboxTitle');
+            const body = document.getElementById('lightboxBody');
+            body.innerHTML = '';
+
+            if (type === 'schematic') {
+                title.textContent = 'Diagrama Esquemático — Driver de 4 Canales DC (Dual L293DNE)';
+                const customImg = document.getElementById('schematicImgPreview');
+                if (!customImg.classList.contains('hidden') && customImg.src) {
+                    body.innerHTML = `<img src="${customImg.src}" class="max-h-[75vh] w-auto object-contain rounded-lg">`;
+                } else {
+                    const clone = document.getElementById('schematicSvgFallback').cloneNode(true);
+                    clone.classList.remove('hidden');
+                    clone.setAttribute('class', 'w-full max-w-4xl h-auto rounded-lg bg-[#fffdf9] p-4');
+                    body.appendChild(clone);
+                }
+            } else if (type === 'pcb3d') {
+                title.textContent = 'Modelado 3D de la PCB (Altium Designer)';
+                const customImg = document.getElementById('pcb3dImgPreview');
+                if (!customImg.classList.contains('hidden') && customImg.src) {
+                    body.innerHTML = `<img src="${customImg.src}" class="max-h-[75vh] w-auto object-contain rounded-lg">`;
+                } else {
+                    const clone = document.getElementById('pcb3dSvgFallback').cloneNode(true);
+                    clone.classList.remove('hidden');
+                    clone.setAttribute('class', 'w-full max-w-4xl h-auto rounded-lg bg-[#091912] p-4');
+                    body.appendChild(clone);
+                }
+            } else if (type === 'casing') {
+                title.textContent = 'Diseño Mecánico y Carcasa Protectora (Casing)';
+                const customImg = document.getElementById('casingImgPreview');
+                if (!customImg.classList.contains('hidden') && customImg.src) {
+                    body.innerHTML = `<img src="${customImg.src}" class="max-h-[75vh] w-auto object-contain rounded-lg">`;
+                } else {
+                    const clone = document.getElementById('casingSvgFallback').cloneNode(true);
+                    clone.classList.remove('hidden');
+                    clone.setAttribute('class', 'w-full max-w-3xl h-auto');
+                    body.appendChild(clone);
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightboxModal').classList.add('hidden');
+        }
+
+        // =====================================================
+        // 3. SIDEBAR, THEME, SEARCH & PRESENTATION MODE
+        // =====================================================
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('-translate-x-full');
+        }
+
+        function setActiveNav(clickedEl) {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.className = 'nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
+            });
+            clickedEl.className = 'nav-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-200 bg-anahuac/15 border-l-2 border-anahuac font-medium transition';
+            if (window.innerWidth < 1024) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            }
+        }
+
+        function togglePresentationMode() {
+            document.body.classList.toggle('presentation-mode');
+            const bar = document.getElementById('presentationBar');
+            const btn = document.getElementById('presModeBtn');
+            const isActive = document.body.classList.contains('presentation-mode');
+
+            if (isActive) {
+                bar.classList.remove('hidden');
+                btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-anahuac text-white border border-anahuac flex items-center gap-1.5 transition shadow-lg';
+            } else {
+                bar.classList.add('hidden');
+                btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition';
+            }
+        }
+
+        const sectionIds = ['resumen', 'arquitectura', 'simulador', 'esquematico-pcb', 'carcasa', 'bom', 'pinout'];
+        let currentSectionIndex = 0;
+
+        function navigateSection(direction) {
+            currentSectionIndex = Math.max(0, Math.min(sectionIds.length - 1, currentSectionIndex + direction));
+            const target = document.getElementById(sectionIds[currentSectionIndex]);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function filterDocumentation(query) {
+            const q = query.trim().toLowerCase();
+            const clearBtn = document.getElementById('clearSearchBtn');
+            clearBtn.classList.toggle('hidden', q.length === 0);
+
+            document.querySelectorAll('.doc-section').forEach(section => {
+                const text = section.innerText.toLowerCase();
+                if (q === '' || text.includes(q)) {
+                    section.classList.remove('hidden');
+                } else {
+                    section.classList.add('hidden');
+                }
+            });
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('sidebarSearch');
+            input.value = '';
+            filterDocumentation('');
+        }
+
+        let isDarkTheme = true;
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            const icon = document.getElementById('themeIcon');
+            if (isDarkTheme) {
+                document.body.classList.remove('bg-slate-100', 'text-slate-900');
+                document.body.classList.add('bg-slate-950', 'text-slate-100');
+                icon.className = 'fa-solid fa-sun';
+            } else {
+                document.body.classList.remove('bg-slate-950', 'text-slate-100');
+                document.body.classList.add('bg-slate-100', 'text-slate-900');
+                icon.className = 'fa-solid fa-moon';
+            }
+        }
+
+        // =====================================================
+        // 4. DOCSIFY / MARKDOWN EXPORT GENERATOR
+        // =====================================================
+        const rawMarkdownDoc = `# Driver de Potencia de 4 Canales DC (Dual L293DNE)
+
+> **Universidad Anáhuac** | Ingeniería Mecatrónica  
+> **Autor:** José Daniel Bobadilla Vega  
+> **Revisión:** Primera Revisión (18/11/2026)  
+> **Versión de Hardware:** v1.0 | **Costo Total:** ~$200.00 MXN
+
+---
+
+## 1. Resumen General (Overview)
+
+Etapa de potencia autónoma (sin microcontrolador) diseñada para controlar hasta **4 motores de corriente continua (DC)** de forma independiente o simultánea con inversión de giro bidireccional (\`CW\` / \`CCW\`) mediante dos circuitos integrados **L293DNE** (doble puente H completo por integrado).
+
+- **Alimentación de Potencia (\`VCC2\`):** +12V DC nominales vía bornera \`J4\` protegida por fusible \`XF1\`.
+- **Regulación Lógica Integrada (\`VCC1\`):** +5V DC mediante regulador lineal \`U1\` (TO-220) y capacitores de desacoplo \`C1\` y \`C2\` (0.1 µF).
+- **Inmunidad al Ruido:** Red de 8 resistencias en configuración **Pull-Down** (\`R1, R3–R9\`) en la bornera de control \`J1\`.
+- **Diagnóstico Visual:** 9 indicadores LED verdes de 3mm (\`DS5\` encendido general + \`DS1–DS4\` y \`DS6–DS9\` en salidas de motor).
+
+---
+
+## 2. Arquitectura del Circuito por Etapas
+
+### 2.1 Etapa de Alimentación y Protección (\`J4\`, \`XF1\`, \`J6\`, \`DS5\`, \`R13\`)
+- **Bornera \`J4\` (2 pines):** Entrada principal \`+12V_IN\` y \`GND\`.
+- **Portafusibles \`XF1\`:** Conectado en serie con \`+12V_IN\` para protección contra sobrecorriente y cortocircuito.
+- **Bornera \`J6\` (2 pines):** Puente de habilitación general hacia el bus \`+12V\`.
+- **Testigo \`DS5\` + \`R13\` (1 kΩ):** Indicador LED verde de presencia de tensión en el bus de \`+12V\`.
+
+### 2.2 Etapa de Regulación Lógica +5V (\`U1\`, \`C1\`, \`C2\`, \`J3\`)
+- **Regulador \`U1\` (TO-220):** Convierte \`+12V\` a \`+5V\` para alimentar \`VCC1\` (pin 16) y los pines de habilitación \`1/2EN\` (pin 1) y \`3/4EN\` (pin 9) de ambos L293DNE.
+- **Capacitores \`C1\` y \`C2\` (0.1 µF, 50V, X7R):** Filtrado de alta frecuencia en entrada y salida del regulador.
+- **Bornera \`J3\` (8 pines):** Distribuye el bus de \`+5V\` hacia los interruptores externos.
+
+### 2.3 Etapa de Control y Red Pull-Down (\`J1\`, \`R1\`, \`R3–R9\`)
+- **Bornera \`J1\` (8 pines):** Recibe las señales \`U1_IN1..U1_IN4\` (hacia \`U2\`) y \`U2_IN1..U2_IN4\` (hacia \`U3\`).
+- **Resistencias Pull-Down (\`R1, R3, R4, R5, R6, R7, R8, R9\`):** Fijan \`0V\` (LOW seguro) cuando los interruptores están abiertos, evitando activaciones falsas por ruido.
+
+### 2.4 Etapa de Potencia y Diagnóstico Visual (\`U2\`, \`U3\`, \`J2\`, \`J5\`, \`J7\`, \`J8\`)
+- **Driver \`U2\` (L293DNE #1):** Controla **Motor 1 (\`J2\`)** con LEDs \`DS1/DS2\` (\`R2, R10\` = 1 kΩ) y **Motor 2 (\`J5\`)** con LEDs \`DS3/DS4\` (\`R11, R12\` = 1 kΩ).
+- **Driver \`U3\` (L293DNE #2):** Controla **Motor 3 (\`J7\`)** con LEDs \`DS6/DS7\` (\`R14, R15\` = 1 kΩ) y **Motor 4 (\`J8\`)** con LEDs \`DS8/DS9\` (\`R16, R17\` = 1 kΩ).
+
+---
+
+## 3. Tabla de Verdad por Puente H (\`EN = +5V\`)
+
+| Enable (1/2EN, 3/4EN) | IN_A | IN_B | Salida Y_A / Y_B | LEDs (DS_A / DS_B) | Estado del Motor DC |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| HIGH (+5V) | LOW (0V) | LOW (0V) | 0V / 0V | OFF / OFF | Motor Detenido (Freno Bajo) |
+| HIGH (+5V) | HIGH (+5V) | LOW (0V) | +12V / 0V | ON / OFF | Giro Horario (CW) |
+| HIGH (+5V) | LOW (0V) | HIGH (+5V) | 0V / +12V | OFF / ON | Giro Antihorario (CCW) |
+| HIGH (+5V) | HIGH (+5V) | HIGH (+5V) | +12V / +12V | ON / ON | Freno Rápido Activo Alto |
+
+---
+
+## 4. Adaptaciones de Manufactura en Placa Física (DFM) y Carcasa
+
+1. **Bases / Zócalos DIP-16 en \`U2\` y \`U3\`:** Se instalaron bases portapines de 16 terminales para evitar daño térmico a los L293DNE durante la soldadura y permitir su reemplazo inmediato.
+2. **Portafusibles \`XF1\` Adaptado:** Adecuación física del portafusibles comercial manteniendo la protección en serie en \`+12V_IN\`.
+3. **Carcasa Protectora (Casing):** Fabricada a medida sin CAD para aislar eléctricamente la cara inferior de soldadura, proteger las pistas y brindar acceso directo a las 8 borneras perimetrales y visibilidad de los 9 LEDs testigos.
+
+---
+
+## 5. Lista de Materiales (BOM) y Presupuesto (~$200.00 MXN)
+
+| Designadores | Descripción | Encapsulado | Cant. | Subtotal (MXN) |
+| :--- | :--- | :--- | :---: | :---: |
+| \`U2, U3\` | Driver Doble Puente H L293DNE | DIP-16 | 2 | $56.00 |
+| \`Zócalos DIP\` | Bases portapines de 16 pines | DIP-16 | 2 | $8.00 |
+| \`U1\` | Regulador Lineal +5V (LM7805) | TO-220 | 1 | $10.00 |
+| \`C1, C2\` | Capacitor Cerámico 0.1 µF 50V X7R | Radial | 2 | $5.00 |
+| \`J1, J3\` | Bornera de 8 pines | THT | 2 | $28.00 |
+| \`J2, J4, J5, J6, J7, J8\` | Borneras de 2 pines | THT | 6 | $27.00 |
+| \`DS1 – DS9\` | LED Verde 3mm Diffused (\`LTL-1CHG\`) | 3mm T-1 | 9 | $9.00 |
+| \`R1, R3–R9\` | Resistencias Pull-Down (10kΩ / 100kΩ) | Axial 0.25W | 8 | $4.00 |
+| \`R2, R10–R17\` | Resistencias para LED 1 kΩ | Axial 0.25W | 9 | $4.50 |
+| \`XF1\` | Portafusibles + Fusible | THT | 1 | $12.50 |
+| \`PCB + Carcasa\` | Placa fenólica/FR4, soldadura y carcasa | Custom | 1 | $36.00 |
+| **TOTAL** | **43 Componentes** | — | **43** | **~$200.00 MXN** |
+`;
+
+        function openExportModal() {
+            document.getElementById('markdownOutput').value = rawMarkdownDoc;
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        function copyMarkdown() {
+            const textarea = document.getElementById('markdownOutput');
+            textarea.select();
+            document.execCommand('copy');
+            const btn = document.getElementById('copyMdBtn');
+            btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> ¡Copiado!';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fa-solid fa-copy mr-1"></i> Copiar README.md';
+            }, 2000);
+        }
+
+        function downloadMarkdown() {
+            const blob = new Blob([rawMarkdownDoc], { type: 'text/markdown;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'README.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Keyboard shortcuts for Lightbox (ESC) & Presentation Mode (Arrows)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLightbox();
+                closeExportModal();
+            }
+            if (document.body.classList.contains('presentation-mode')) {
+                if (e.key === 'ArrowRight') navigateSection(1);
+                if (e.key === 'ArrowLeft') navigateSection(-1);
+            }
+        });
+
+        // Initialize Simulator on load
+        window.onload = function() {
+            updateSimulatorUI();
+        };
+    </script>
+</body>
+</html>
